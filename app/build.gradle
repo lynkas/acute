@@ -25,11 +25,12 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
-        buildConfigField("String", "u", properties["u"])
-        buildConfigField("String", "p", properties["p"])
-        buildConfigField("String", "c", properties["c"])
-        buildConfigField("String", "v", properties["v"])
-        buildConfigField("String", "f", properties["f"])
+        buildConfigField("String", "api", "\"" + properties["api"] + "\"")
+        buildConfigField("String", "u", "\"" + properties["u"] + "\"")
+        buildConfigField("String", "p", "\"" + properties["p"] + "\"")
+        buildConfigField("String", "c", "\"" + properties["c"] + "\"")
+        buildConfigField("String", "v", "\"" + properties["v"] + "\"")
+        buildConfigField("String", "f", "\"" + properties["f"] + "\"")
     }
 
     buildTypes {

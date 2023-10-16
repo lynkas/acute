@@ -12,9 +12,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
-import java.io.File
-import java.io.FileInputStream
-import java.util.Properties
 
 object NetClient {
     @SuppressLint("SuspiciousIndentation")

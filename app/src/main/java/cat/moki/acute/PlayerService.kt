@@ -3,6 +3,7 @@ package cat.moki.acute
 import android.os.Bundle
 import android.util.Log
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.LibraryResult
@@ -70,7 +71,14 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
                 params: LibraryParams?
             ): ListenableFuture<LibraryResult<MediaItem>> {
                 Log.d(TAG, "onGetLibraryRoot: get root")
-                return Futures.immediateFuture(LibraryResult.ofItem(MediaItem.Builder().setMediaId("root").build(), params))
+                return Futures.immediateFuture(
+                    LibraryResult.ofItem(
+                        MediaItem.Builder()
+                            .setMediaId("root")
+                            .setMediaMetadata(MediaMetadata.Builder().setIsBrowsable(true).setIsPlayable(false).build())
+                            .build(), params
+                    )
+                )
             }
 
             override fun onGetItem(

@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -53,13 +54,14 @@ class AlbumDetail : ComponentActivity() {
 
 @Composable
 fun AlbumDetailComponent(
-    scrollState: ScrollState = rememberScrollState(),
+    scrollState: ScrollState = rememberScrollState(initial = 300),
     albumDetail: AlbumDetailData,
     addSong: (Song) -> Unit
 ) {
     Column(
         modifier = Modifier.verticalScroll(scrollState)
     ) {
+
         AlbumDetailHeadPic(albumDetail.album, scrollState.value)
         AlbumDetailHeadInfo(albumDetail.album)
         SongList(albumDetail.album, albumDetail.songs, albumDetail.sameArtist, addSong)
@@ -71,10 +73,12 @@ fun AlbumDetailComponent(
 @Composable
 fun AlbumDetailHeadPic(album: Album, scrollPosition: Int) {
     Card(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(12.dp, 0.dp)
-            .graphicsLayer { translationY = scrollPosition / 2f }
+//            .padding(12.dp, 0.dp)
+
+            .graphicsLayer { translationY = scrollPosition / 2f },
+        shape = RectangleShape
     ) {
         GlideImage(
             model = NetClient.getCoverArtUrl(album.id),
@@ -106,7 +110,6 @@ fun AlbumDetailHeadInfo(album: Album) {
         shape = RoundedCornerShape(bottomEnd = 0.dp, bottomStart = 0.dp),
         modifier = Modifier.padding(top = 8.dp)
     ) {
-
         Column(
             Modifier
                 .fillMaxWidth()

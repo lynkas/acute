@@ -9,6 +9,8 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
@@ -40,6 +42,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.*
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -194,7 +197,9 @@ class Home : ComponentActivity() {
                         }
                     ) {
                         Box(modifier = Modifier.padding(it)) {
-                            NavHost(navController = navController, startDestination = items[0]) {
+                            NavHost(
+                                navController = navController, startDestination = items[0],
+                            ) {
                                 navigation(startDestination = "library", route = items[0]) {
                                     composable("playlist") {
                                         playerData.player.value?.let { it1 ->
@@ -208,7 +213,13 @@ class Home : ComponentActivity() {
                                     composable("library") {
                                         if (browser.value != null) {
                                             Library(library = library, onNavToAlbum = { albumID ->
-                                                navController.navigate("album/${albumID}")
+                                                navController.navigate("album/${albumID}") {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
+                                                    }
+
+                                                }
+
                                             }, browser = browser.value!!)
                                         }
                                     }

@@ -166,7 +166,10 @@ fun ToMediaItem(songId: String?, album: Album): MediaItem = MediaItem.Builder().
                     setArtworkUri(Uri.parse(NetClient.getCoverArtUrl(song.id)))
                     setArtist(song.artist)
                     setMediaType(MEDIA_TYPE_MUSIC)
+
                 }
+                setIsBrowsable(song == null)
+                setIsPlayable(song != null)
                 setAlbumTitle(album.title)
                 setAlbumArtist(album.artist)
                 setTitle(song?.id ?: (album.id))

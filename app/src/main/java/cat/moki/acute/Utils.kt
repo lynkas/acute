@@ -1,5 +1,10 @@
 package cat.moki.acute
 
+import androidx.media3.common.MediaItem
+import androidx.media3.session.MediaController
+import cat.moki.acute.models.Album
+import cat.moki.acute.models.Song
+
 fun Int.formatSecond(): String {
     val h: Int = this / 3600
     val m: Int = this % 3600 / 60
@@ -17,10 +22,19 @@ fun String.extractComplexMediaId(): Pair<String, String> {
     return Pair(values[0], values[1])
 }
 
-fun String.isAlbum(): Boolean {
-    return this.startsWith("al-")
-}
+//fun String.isAlbum(): Boolean {
+//    return this.startsWith("al-")
+//}
+//
+//fun String.isSong(): Boolean {
+//    return this.startsWith("tr-")
+//}
 
-fun String.isSong(): Boolean {
-    return this.startsWith("tr-")
-}
+val MediaItem.album: Album
+    get() = this.mediaMetadata.extras?.getParcelable("album")!!
+
+val MediaItem.songs: List<MediaItem>?
+    get() = this.album.songMediaItemList
+
+val MediaItem.song: Song
+    get() = this.mediaMetadata.extras?.getParcelable("song")!!

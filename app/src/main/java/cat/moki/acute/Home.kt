@@ -50,11 +50,14 @@ import androidx.navigation.navigation
 import cat.moki.acute.models.Song
 import cat.moki.acute.client.Client
 import cat.moki.acute.client.NetClient
+import cat.moki.acute.models.Album
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import kotlinx.coroutines.guava.await
+import kotlinx.coroutines.launch
 
 class Home : ComponentActivity() {
     private val library: LibraryViewModel by viewModels()
@@ -87,8 +90,11 @@ class Home : ComponentActivity() {
                 SessionToken(this, ComponentName(this, PlayerService::class.java))
             )
                 .buildAsync()
+        Log.d("browser.value", "initializeBrowser: ${browserFuture}")
+
         browserFuture.addListener({
             browser.value = browserFuture.get()
+            Log.d("browser.value", "initializeBrowser: ${browser.value}")
         }, ContextCompat.getMainExecutor(this))
     }
 
@@ -109,6 +115,10 @@ class Home : ComponentActivity() {
             val systemUiController = rememberSystemUiController()
             val useDarkIcons = !isSystemInDarkTheme()
             val navController = rememberNavController()
+            var showBottomSheet by remember { mutableStateOf(false) }
+            val sheetState = rememberModalBottomSheetState()
+            val scope = rememberCoroutineScope()
+
             val currentRoute = navController
                 .currentBackStackEntryFlow
                 .collectAsState(initial = navController.currentBackStackEntry)
@@ -179,17 +189,17 @@ class Home : ComponentActivity() {
                         },
                         bottomBar = {
                             BottomAppBar(modifier = Modifier.clickable {
-
-                                when (currentRoute.value?.destination?.route) {
-                                    "playlist" -> {
-                                        navController.popBackStack()
-                                    }
-
-                                    else -> {
-                                        navController.navigate("playlist")
-                                    }
-
-                                }
+                                showBottomSheet = true
+//                                when (currentRoute.value?.destination?.route) {
+//                                    "playlist" -> {
+//                                        navController.popBackStack()
+//                                    }
+//
+//                                    else -> {
+//                                        navController.navigate("playlist")
+//                                    }
+//
+//                                }
                             }
                             ) {
                                 PlayerController(playerData)
@@ -224,60 +234,47 @@ class Home : ComponentActivity() {
                                         }
                                     }
                                     composable("album/{albumID}") { backStackEntry ->
-                                        val albumDetail = rememberSaveable(
-                                        ) {
-                                            AlbumDetailData(
-                                                library.getAlbumByID(
-                                                    backStackEntry.arguments?.getString(
-                                                        "albumID"
-                                                    )!!
-                                                )!!
-                                            )
-                                        }
+                                        var album by rememberSaveable { mutableStateOf<Album?>(null) }
                                         val context = LocalContext.current
                                         LaunchedEffect(true) {
-                                            albumDetail.getSongList(context)
+                                            val albumId = backStackEntry.arguments?.getString("albumID")!!
+                                            Log.d("TAG", "onCreate: $albumId")
+                                            album = browser.value?.getItem("$albumId/")?.await()?.value?.album
+
                                         }
-                                        AlbumDetailComponent(
-                                            albumDetail = albumDetail,
-                                            addSong = { song ->
-                                                run {
-                                                    playerData.player.value?.addMediaItem(
-                                                        MediaItem.Builder()
-                                                            .setMediaId(song.id)
-                                                            .setMediaMetadata(
-                                                                MediaMetadata.Builder()
-                                                                    .setArtworkUri(
-                                                                        Uri.parse(
-                                                                            NetClient.getCoverArtUrl(
-                                                                                song.albumId
-                                                                            )
-                                                                        )
-                                                                    ).build()
-                                                            ).setUri(
-                                                                Uri.parse(
-                                                                    NetClient.getStreamUrl(
-                                                                        song.id
-                                                                    )
-                                                                )
-                                                            )
-                                                            .build()
-                                                    )
-                                                }
-                                                playerData.player.value?.let {
-                                                    it.playWhenReady = true
-                                                    it.prepare()
-                                                } ?: Log.d("player", "null")
-                                                playerData.addPlaylist(song)
-//                                                binder.addPlaylistItem(song)
-                                            }
-                                        )
+                                        album?.let {
+                                            AlbumDetailComponent(
+                                                album = it.albumMediaItem,
+                                                addSong = { song -> browser.value?.addMediaItem(song) }
+                                            )
+                                        }
                                     }
                                 }
                                 composable(items[1]) {
                                     Box() {
                                         Text(text = "aaaa")
                                     }
+                                }
+                            }
+                        }
+
+                        if (showBottomSheet) {
+                            ModalBottomSheet(
+                                onDismissRequest = {
+                                    showBottomSheet = false
+                                },
+                                sheetState = sheetState
+                            ) {
+                                // Sheet content
+                                browser.value?.let { browser -> PlayList(browser) }
+                                Button(onClick = {
+                                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                        if (!sheetState.isVisible) {
+                                            showBottomSheet = false
+                                        }
+                                    }
+                                }) {
+                                    Text("Hide bottom sheet")
                                 }
                             }
                         }

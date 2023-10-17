@@ -1,6 +1,8 @@
 package cat.moki.acute
 
 import android.os.Bundle
+import android.provider.MediaStore.Audio.Media
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ScrollState
@@ -34,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.MediaItem
 import cat.moki.acute.models.Album
 import cat.moki.acute.models.Song
 import cat.moki.acute.client.NetClient
@@ -54,34 +57,45 @@ class AlbumDetail : ComponentActivity() {
 
 @Composable
 fun AlbumDetailComponent(
-    scrollState: ScrollState = rememberScrollState(initial = 300),
-    albumDetail: AlbumDetailData,
-    addSong: (Song) -> Unit
+    scrollState: ScrollState = rememberScrollState(initial = 0),
+    album: MediaItem,
+    addSong: (MediaItem) -> Unit
 ) {
     Column(
         modifier = Modifier.verticalScroll(scrollState)
     ) {
 
-        AlbumDetailHeadPic(albumDetail.album, scrollState.value)
-        AlbumDetailHeadInfo(albumDetail.album)
-        SongList(albumDetail.album, albumDetail.songs, albumDetail.sameArtist, addSong)
+        val albumItem = album.album
+        Log.d("TAG", NetClient.getCoverArtUrl(album.mediaId))
+        AlbumDetailHeadPic(NetClient.getCoverArtUrl(album.mediaId), scrollState.value)
+        AlbumDetailHeadInfo(
+            artist = album.mediaMetadata.artist.toString(),
+            title = album.mediaMetadata.title.toString(),
+            duration = albumItem.duration,
+            songCount = albumItem.songCount
+        )
 
+        val songs = album.songs
+        songs?.let {
+            for ((index, song) in songs.withIndex()) {
+                SongListItem(album, song = song, sameArtist = albumItem.sameArtist, addSong)
+                if (index + 1 != songs.size) Divider(Modifier.padding(horizontal = 12.dp))
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun AlbumDetailHeadPic(album: Album, scrollPosition: Int) {
+fun AlbumDetailHeadPic(coverUrl: String, scrollPosition: Int) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-//            .padding(12.dp, 0.dp)
-
             .graphicsLayer { translationY = scrollPosition / 2f },
         shape = RectangleShape
     ) {
         GlideImage(
-            model = NetClient.getCoverArtUrl(album.id),
+            model = coverUrl,
             contentDescription = "",
             contentScale = ContentScale.FillWidth,
         )
@@ -105,7 +119,7 @@ fun AlbumTimeAndTracksInfo(seconds: Int, tracksNumber: Int) {
 }
 
 @Composable
-fun AlbumDetailHeadInfo(album: Album) {
+fun AlbumDetailHeadInfo(title: String, artist: String, duration: Int, songCount: Int) {
     Card(
         shape = RoundedCornerShape(bottomEnd = 0.dp, bottomStart = 0.dp),
         modifier = Modifier.padding(top = 8.dp)
@@ -123,9 +137,9 @@ fun AlbumDetailHeadInfo(album: Album) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    Text(text = album.name, fontSize = 26.sp, lineHeight = 32.sp)
-                    Text(text = album.artist, fontSize = 18.sp)
-                    AlbumTimeAndTracksInfo(album.duration, album.songCount)
+                    Text(text = title, fontSize = 26.sp, lineHeight = 32.sp)
+                    Text(text = artist, fontSize = 18.sp)
+                    AlbumTimeAndTracksInfo(duration, songCount)
                 }
             }
         }
@@ -133,25 +147,18 @@ fun AlbumDetailHeadInfo(album: Album) {
 }
 
 
-@Composable
-fun SongList(album: Album, songs: List<Song>, sameArtist: Boolean, addSong: (Song) -> Unit) {
-    for ((index, song) in songs.withIndex()) {
-        SongListItem(album, song = song, sameArtist = sameArtist, addSong)
-        if (index + 1 != songs.size) Divider(Modifier.padding(horizontal = 12.dp))
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SongListItem(album: Album, song: Song, sameArtist: Boolean, addSong: (Song) -> Unit) {
+fun SongListItem(album: MediaItem, song: MediaItem, sameArtist: Boolean, addSong: (MediaItem) -> Unit) {
     val context = LocalContext.current
+    val songItem = song.song
     Card(shape = RoundedCornerShape(0.dp), onClick = {
         addSong(song)
     }) {
         ListItem(
             headlineContent = {
                 Text(
-                    text = song.title,
+                    text = song.mediaMetadata.title.toString(),
                     fontSize = 18.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -160,14 +167,14 @@ fun SongListItem(album: Album, song: Song, sameArtist: Boolean, addSong: (Song) 
             supportingContent = {
                 if (!sameArtist)
                     Text(
-                        text = song.artist,
+                        text = song.mediaMetadata.artist.toString(),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
             },
             trailingContent = {
                 Text(
-                    text = "${song.duration.formatSecond()} ",
+                    text = "${songItem.duration.formatSecond()} ",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

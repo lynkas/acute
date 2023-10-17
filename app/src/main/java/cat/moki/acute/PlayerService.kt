@@ -16,7 +16,6 @@ import cat.moki.acute.models.ToMediaItem
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.ListenableFutureTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,6 +38,7 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
             ): ListenableFuture<SessionResult> {
                 return super.onCustomCommand(session, controller, customCommand, args)
             }
+
 
             override fun onAddMediaItems(
                 mediaSession: MediaSession,
@@ -87,6 +87,7 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
                 complexMediaId: String
             ): ListenableFuture<LibraryResult<MediaItem>> {
                 val (albumId, songId) = complexMediaId.extractComplexMediaId()
+                Log.d(TAG, "onGetItem: $albumId, $songId")
                 return future {
                     val album = Client.store(this@PlayerService).getAlbumDetail(albumId)
                     val song = album.find(songId)
@@ -106,11 +107,11 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
                 return future {
                     if (parentId == "root") {
                         val albums = Client.store(this@PlayerService).getAlbumList(size = pageSize, offset = pageSize * page)
-                        return@future LibraryResult.ofItemList(albums.map { ToMediaItem(null, it) }, params)
+                        return@future LibraryResult.ofItemList(albums.map { it.albumMediaItem }, params)
                     } else {
                         val (albumId, _) = parentId.extractComplexMediaId()
                         val album = Client.store(this@PlayerService).getAlbumDetail(albumId)
-                        val mediaItems = (album.song ?: emptyList()).subList(pageSize * page, pageSize * page).map { ToMediaItem(it.id, album) }
+                        val mediaItems: List<MediaItem> = album.songMediaItemList ?: emptyList()
                         return@future LibraryResult.ofItemList(mediaItems, params)
                     }
 
@@ -145,7 +146,7 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
 
     override fun onCreate() {
         super.onCreate()
-        val player = ExoPlayer.Builder(this).build()
+        player = ExoPlayer.Builder(this).build()
         mediaLibrarySession = MediaLibrarySession.Builder(this, player, callback).build()
     }
 

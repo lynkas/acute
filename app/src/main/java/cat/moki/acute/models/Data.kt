@@ -1,16 +1,19 @@
 package cat.moki.acute.models
 
 import android.net.Uri
+import android.os.Bundle
 import android.os.Parcelable
 import android.provider.MediaStore.Audio.Media
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MediaMetadata.MEDIA_TYPE_ALBUM
 import androidx.media3.common.MediaMetadata.MEDIA_TYPE_MUSIC
 import androidx.media3.common.MediaMetadata.MediaType
 import androidx.media3.common.MimeTypes
 import androidx.room.*
 import cat.moki.acute.client.NetClient
 import com.google.gson.annotations.SerializedName
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.util.*
 
@@ -96,7 +99,27 @@ data class Album(
         null
     )
 
+    @IgnoredOnParcel
+    @Ignore
+    private var _albumMediaItem: MediaItem? = null
+
+    @IgnoredOnParcel
+    @Ignore
+    private var _songMediaItemList: List<MediaItem>? = null
     fun find(songId: String): Song? = this.song?.find { song -> songId == song.id }
+    val albumMediaItem: MediaItem
+        get() = if (_albumMediaItem != null) _albumMediaItem!! else {
+            _albumMediaItem = ToMediaItem(null, this)
+            _albumMediaItem!!
+        }
+    val songMediaItemList: List<MediaItem>?
+        get() = if (_songMediaItemList != null) _songMediaItemList else {
+            _songMediaItemList = song?.map { s -> ToMediaItem(s.id, this) }
+            _songMediaItemList
+        }
+    val sameArtist: Boolean
+        get() = song?.all { it.artist == this.artist } ?: false
+
 }
 
 @Dao
@@ -162,17 +185,24 @@ fun ToMediaItem(songId: String?, album: Album): MediaItem = MediaItem.Builder().
     setMediaMetadata(
         MediaMetadata.Builder()
             .apply {
+                setArtworkUri(Uri.parse(NetClient.getCoverArtUrl(album.id)))
                 if (song != null) {
-                    setArtworkUri(Uri.parse(NetClient.getCoverArtUrl(song.id)))
                     setArtist(song.artist)
                     setMediaType(MEDIA_TYPE_MUSIC)
-
+                    setTitle(song.title)
+                } else {
+                    setArtist(album.artist)
+                    setMediaType(MEDIA_TYPE_ALBUM)
+                    setTitle(if (album.name == "") album.title else album.name)
                 }
                 setIsBrowsable(song == null)
                 setIsPlayable(song != null)
                 setAlbumTitle(album.title)
                 setAlbumArtist(album.artist)
-                setTitle(song?.id ?: (album.id))
+                val data = Bundle()
+                data.putParcelable("album", album)
+                data.putParcelable("song", song)
+                setExtras(data)
             }.build()
 
     )

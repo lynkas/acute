@@ -29,6 +29,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -111,7 +112,7 @@ class Home : ComponentActivity() {
             LaunchedEffect(Client.networkMetered.value) {
                 library.reset()
             }
-            val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+            val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
             val systemUiController = rememberSystemUiController()
             val useDarkIcons = !isSystemInDarkTheme()
             val navController = rememberNavController()
@@ -130,76 +131,59 @@ class Home : ComponentActivity() {
                         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                         topBar = {
                             when (val route = currentRoute.value?.destination?.route) {
-                                "library" -> {
-                                    LargeTopAppBar(
-                                        title = { Text(text = "Library") },
-                                        scrollBehavior = scrollBehavior,
-                                        navigationIcon = {
-                                            IconButton(onClick = { /* doSomething() */ }) {
-                                                Icon(
-                                                    imageVector = Icons.Filled.Menu,
-                                                    contentDescription = "Localized description"
-                                                )
-                                            }
-                                        },
-                                        colors = TopAppBarDefaults.largeTopAppBarColors(),
-                                        actions = {
-                                            IconButton(onClick = { library.toggleView() }) {
-                                                Icon(
-                                                    imageVector = if (library.viewBy == ViewBy.list) Icons.Filled.GridView else Icons.Filled.List,
-                                                    contentDescription = "Localized description"
-                                                )
-                                            }
-                                            Switch(
-                                                modifier = Modifier.semantics {
-                                                    contentDescription = "Demo"
-                                                },
-                                                checked = Client.networkMetered.value,
-                                                onCheckedChange = {
-                                                    Client.networkMetered.value = it
-                                                })
-                                        },
-                                    )
-                                }
-
-                                "album/{albumID}" -> {
-                                    TopAppBar(
-                                        title = {
-                                            Text(
-                                                text = "Album",
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                "library" -> TopAppBar(
+                                    title = {
+                                        Text(
+                                            text = "Library",
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    scrollBehavior = scrollBehavior,
+                                    navigationIcon = {
+                                        IconButton(onClick = { /* doSomething() */ }) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Menu,
+                                                contentDescription = "Localized description"
                                             )
-                                        })
-                                }
-
-                                "playlist" -> {
-                                    TopAppBar(
-                                        title = {
-                                            Text(
-                                                text = "Playlist",
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                        }
+                                    },
+                                    actions = {
+                                        IconButton(onClick = { library.toggleView() }) {
+                                            Icon(
+                                                imageVector = if (library.viewBy == ViewBy.list) Icons.Filled.GridView else Icons.Filled.List,
+                                                contentDescription = "Localized description"
                                             )
-                                        })
-                                }
+                                        }
+                                        Switch(
+                                            modifier = Modifier.semantics {
+                                                contentDescription = "Demo"
+                                            },
+                                            checked = Client.networkMetered.value,
+                                            onCheckedChange = {
+                                                Client.networkMetered.value = it
+                                            })
+                                    },
+                                )
 
-                                else -> {}
+                                "album/{albumID}" -> TopAppBar(
+                                    title = {
+                                        Text(
+                                            text = "Album",
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+
+                                            )
+                                    },
+                                    scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
+                                )
+
                             }
+
                         },
                         bottomBar = {
                             BottomAppBar(modifier = Modifier.clickable {
                                 showBottomSheet = true
-//                                when (currentRoute.value?.destination?.route) {
-//                                    "playlist" -> {
-//                                        navController.popBackStack()
-//                                    }
-//
-//                                    else -> {
-//                                        navController.navigate("playlist")
-//                                    }
-//
-//                                }
                             }
                             ) {
                                 PlayerController(playerData)
@@ -208,51 +192,54 @@ class Home : ComponentActivity() {
                     ) {
                         Box(modifier = Modifier.padding(it)) {
                             NavHost(
-                                navController = navController, startDestination = items[0],
-                            ) {
-                                navigation(startDestination = "library", route = items[0]) {
-                                    composable("playlist") {
-                                        playerData.player.value?.let { it1 ->
-                                            PlayList(
-                                                it1,
-                                                playerData.playlist,
-                                                currentPlayingIndex = playerData.state.collectAsState().value.songId
-                                            )
-                                        }
-                                    }
-                                    composable("library") {
-                                        if (browser.value != null) {
-                                            Library(library = library, onNavToAlbum = { albumID ->
-                                                navController.navigate("album/${albumID}") {
-                                                    popUpTo(navController.graph.findStartDestination().id) {
-                                                        saveState = true
-                                                    }
+                                navController = navController, startDestination = "library",
 
+                                ) {
+                                composable("playlist") {
+                                    playerData.player.value?.let { it1 ->
+                                        PlayList(
+                                            it1,
+                                            playerData.playlist,
+                                            currentPlayingIndex = playerData.state.collectAsState().value.songId
+                                        )
+                                    }
+                                }
+                                composable("library") {
+                                    if (browser.value != null) {
+                                        Library(library = library, onNavToAlbum = { albumID ->
+                                            navController.navigate("album/${albumID}") {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
                                                 }
 
-                                            }, browser = browser.value!!)
-                                        }
-                                    }
-                                    composable("album/{albumID}") { backStackEntry ->
-                                        var album by rememberSaveable { mutableStateOf<Album?>(null) }
-                                        val context = LocalContext.current
-                                        LaunchedEffect(true) {
-                                            val albumId = backStackEntry.arguments?.getString("albumID")!!
-                                            Log.d("TAG", "onCreate: $albumId")
-                                            album = browser.value?.getItem("$albumId/")?.await()?.value?.album
+                                            }
 
-                                        }
+                                        }, browser = browser.value!!)
+                                    }
+                                }
+                                composable("album/{albumID}") { backStackEntry ->
+                                    var album by rememberSaveable { mutableStateOf<Album?>(null) }
+                                    val context = LocalContext.current
+                                    LaunchedEffect(true) {
+                                        val albumId = backStackEntry.arguments?.getString("albumID")!!
+                                        Log.d("TAG", "onCreate: $albumId")
+                                        album = browser.value?.getItem("$albumId/")?.await()?.value?.album
+
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .fillMaxHeight()
+                                    ) {
                                         album?.let {
                                             AlbumDetailComponent(
                                                 album = it.albumMediaItem,
                                                 addSong = { song -> browser.value?.addMediaItem(song) }
                                             )
+                                        } ?: run {
+                                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                                         }
-                                    }
-                                }
-                                composable(items[1]) {
-                                    Box() {
-                                        Text(text = "aaaa")
                                     }
                                 }
                             }

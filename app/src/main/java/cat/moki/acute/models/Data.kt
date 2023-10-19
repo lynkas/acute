@@ -186,6 +186,7 @@ fun ToMediaItem(songId: String?, album: Album): MediaItem = MediaItem.Builder().
         MediaMetadata.Builder()
             .apply {
                 setArtworkUri(Uri.parse(NetClient.getCoverArtUrl(album.id)))
+                val albumTitle = if (album.name == "") album.title else album.name
                 if (song != null) {
                     setArtist(song.artist)
                     setMediaType(MEDIA_TYPE_MUSIC)
@@ -193,16 +194,22 @@ fun ToMediaItem(songId: String?, album: Album): MediaItem = MediaItem.Builder().
                 } else {
                     setArtist(album.artist)
                     setMediaType(MEDIA_TYPE_ALBUM)
-                    setTitle(if (album.name == "") album.title else album.name)
+                    setTitle(albumTitle)
                 }
                 setIsBrowsable(song == null)
                 setIsPlayable(song != null)
-                setAlbumTitle(album.title)
+                setAlbumTitle(albumTitle)
                 setAlbumArtist(album.artist)
-                val data = Bundle()
-                data.putParcelable("album", album)
-                data.putParcelable("song", song)
-                setExtras(data)
+                val albumBundle = Bundle()
+                albumBundle.putParcelable("album", album)
+                albumBundle.classLoader = Album::class.java.classLoader
+                val songBundle = Bundle()
+                songBundle.putParcelable("song", song)
+                albumBundle.classLoader = Song::class.java.classLoader
+                val bundle = Bundle()
+                bundle.putBundle("album", albumBundle)
+                bundle.putBundle("song", songBundle)
+                setExtras(bundle)
             }.build()
 
     )

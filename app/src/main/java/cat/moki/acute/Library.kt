@@ -1,8 +1,7 @@
 package cat.moki.acute
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import android.provider.MediaStore.Audio.Media
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,22 +18,12 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,97 +35,121 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
+import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaBrowser
 import cat.moki.acute.client.NetClient
 import cat.moki.acute.models.Album
-import cat.moki.acute.ui.theme.AcuteTheme
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import kotlinx.coroutines.guava.await
+import okhttp3.internal.toImmutableList
+import kotlin.math.ceil
+import androidx.activity.viewModels
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 enum class ViewBy {
     list, grid
 }
 
-class LibraryOOld : ComponentActivity() {
-//    private val library: LibraryViewModel by viewModels()
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            var viewBy by rememberSaveable { mutableStateOf(ViewBy.list) }
-            val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-            AcuteTheme {
-
-                Surface() {
-                    Scaffold(
-                        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                        topBar = {
-                            LargeTopAppBar(
-                                title = { Text(text = "Library") },
-                                scrollBehavior = scrollBehavior,
-                                navigationIcon = {
-                                    IconButton(onClick = { /* doSomething() */ }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Menu,
-                                            contentDescription = "Localized description"
-                                        )
-                                    }
-                                },
-                                actions = {
-                                    IconButton(onClick = {
-                                        viewBy =
-                                            if (viewBy == ViewBy.list) ViewBy.grid else ViewBy.list
-                                    }) {
-                                        Icon(
-                                            imageVector = if (viewBy == ViewBy.list) Icons.Filled.GridView else Icons.Filled.List,
-                                            contentDescription = "Localized description"
-                                        )
-                                    }
-                                },
-                            )
-                        },
-//                        bottomBar = { Nav(navController) }
-                    ) {
-                        Box(modifier = Modifier.padding(it)) {
-//                            if (viewBy == ViewBy.grid) {
-//                                AlbumPreviewGrid(library = library)
-//                            }
-//                            if (viewBy == ViewBy.list) {
-//                                AlbumPreviewList(library = library)
-//                            }
-                        }
-                    }
-                }
+val MediaItemListSaver = listSaver<MutableList<MediaItem>, MediaItem>(
+    save = { stateList ->
+        if (stateList.isNotEmpty()) {
+            val first = stateList.first()
+            if (!canBeSaved(first)) {
+                throw IllegalStateException("${first::class} cannot be saved. By default only types which can be stored in the Bundle class can be saved.")
             }
         }
+        stateList.toList()
+    },
+    restore = { it.toMutableStateList() }
+)
+
+class LibraryLibrary() : ViewModel() {
+    val _albumList = mutableListOf<MediaItem>()
+    val _lastLoad = mutableIntStateOf(1)
+    val albumList: List<MediaItem>
+        get() = _albumList.toImmutableList()
+    val lastLoad: Int
+        get() = _lastLoad.intValue
+
+    private var _root: MediaItem? = null
+    private suspend fun getRoot(browser: MediaBrowser): MediaItem {
+        _root ?: run {
+            _root = browser.getLibraryRoot(null).await().value
+        }
+        return _root!!
+    }
+
+    fun getAlbums(browser: MediaBrowser, page: Int, size: Int) {
+        viewModelScope.launch(Dispatchers.Main) {
+            val root = getRoot(browser = browser)
+            val result = browser.getChildren(root.mediaId, page, size, null).await()
+            if (result.resultCode == LibraryResult.RESULT_SUCCESS) {
+                Log.d("reachBottom", "Library: query succeeded")
+                result.value?.let {
+                    Log.d("reachBottom", "Library:response length ${it.size}")
+                    _albumList.addAll(it)
+                    _lastLoad.value = it.size
+                    Log.d("reachBottom", "Library:albumList length ${_albumList.size}")
+                } ?: run { Log.w("Library UI", "Library: resultCode ${result.resultCode} but result.value is null") }
+
+            } else {
+                Log.e("TAG", "getAlbums: request error")
+            }
+        }
+
     }
 }
 
 @Composable
-fun AlbumPreviewList(library: LibraryViewModel, onNavToAlbum: (String) -> Unit) {
-    LazyColumn() {
-        items(library.albumList) { album ->
+fun Library(libraryLibrary: LibraryLibrary, browser: MediaBrowser, onNavToAlbum: (String) -> Unit, mode: ViewBy = ViewBy.list) {
+    val pageSize = 10
+    var reachBottom by rememberSaveable { mutableStateOf(true) }
+    var root by rememberSaveable { mutableStateOf<MediaItem?>(null) }
+    fun pageCount(): Int = ceil(libraryLibrary.albumList.size.toDouble() / pageSize.toDouble()).toInt()
+    fun query() = libraryLibrary.getAlbums(browser = browser, pageCount(), pageSize)
+    if (mode == ViewBy.grid) {
+        AlbumPreviewGrid(
+            albumList = libraryLibrary.albumList,
+            onNavToAlbum = onNavToAlbum,
+            allLoaded = libraryLibrary.lastLoad == 0,
+            load = { query() })
+    }
+    if (mode == ViewBy.list) {
+        AlbumPreviewList(
+            albumList = libraryLibrary.albumList,
+            onNavToAlbum = onNavToAlbum,
+            allLoaded = libraryLibrary.lastLoad == 0,
+            load = { query() }
+        )
+    }
+
+}
+
+@Composable
+fun AlbumPreviewList(albumList: List<MediaItem>, onNavToAlbum: (String) -> Unit, allLoaded: Boolean, load: () -> Unit) {
+    LazyColumn {
+        items(albumList) { album ->
             AlbumListItem(album = album, onNavToAlbum = onNavToAlbum)
         }
         item {
             BoxWithConstraints(
                 Modifier.fillMaxWidth()
             ) {
-                if (!library.loaded) {
-                    val context = LocalContext.current
-                    LaunchedEffect(true) {
-                        library.get(context)
-                    }
+                if (!allLoaded) {
+                    LaunchedEffect(true) { load() }
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
                     Box(
@@ -157,10 +170,9 @@ fun AlbumPreviewList(library: LibraryViewModel, onNavToAlbum: (String) -> Unit) 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
-fun AlbumListItem(album: Album, onNavToAlbum: (String) -> Unit) {
-    val context = LocalContext.current
+fun AlbumListItem(album: MediaItem, onNavToAlbum: (String) -> Unit) {
     Card(onClick = {
-        onNavToAlbum(album.id)
+        onNavToAlbum(album.mediaId)
     }) {
 
         ListItem(
@@ -168,7 +180,7 @@ fun AlbumListItem(album: Album, onNavToAlbum: (String) -> Unit) {
             leadingContent = {
                 Card(shape = RoundedCornerShape(8.dp)) {
                     GlideImage(
-                        model = album.coverArt?.let { NetClient.getCoverArtUrl(id = it) },
+                        model = album.mediaMetadata.artworkUri,
                         contentDescription = "",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -185,7 +197,7 @@ fun AlbumListItem(album: Album, onNavToAlbum: (String) -> Unit) {
             },
             headlineContent = {
                 Text(
-                    text = album.name,
+                    text = album.mediaMetadata.title.toString(),
                     fontSize = 20.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -193,7 +205,7 @@ fun AlbumListItem(album: Album, onNavToAlbum: (String) -> Unit) {
             },
             supportingContent = {
                 Text(
-                    text = album.artist,
+                    text = album.mediaMetadata.artist.toString(),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -203,28 +215,7 @@ fun AlbumListItem(album: Album, onNavToAlbum: (String) -> Unit) {
 }
 
 @Composable
-fun AlbumPreviewGrid(library: LibraryViewModel, onNavToAlbum: (String) -> Unit, browser: MediaBrowser) {
-    val albumList = rememberSaveable(
-        saver = listSaver<MutableList<MediaItem>, MediaItem>(
-            save = { stateList ->
-                if (stateList.isNotEmpty()) {
-                    val first = stateList.first()
-                    if (!canBeSaved(first)) {
-                        throw IllegalStateException("${first::class} cannot be saved. By default only types which can be stored in the Bundle class can be saved.")
-                    }
-                }
-                stateList.toList()
-            },
-            restore = { it.toMutableStateList() }
-        )
-    ) { mutableListOf() }
-    val page by rememberSaveable { mutableIntStateOf(0) }
-    val pageSize by rememberSaveable { mutableIntStateOf(10) }
-    val loading by rememberSaveable { mutableStateOf(false) }
-    var root by rememberSaveable { mutableStateOf<MediaItem?>(null) }
-    LaunchedEffect(true) {
-        root = browser.getLibraryRoot(null).await().value
-    }
+fun AlbumPreviewGrid(albumList: List<MediaItem>, onNavToAlbum: (String) -> Unit, allLoaded: Boolean, load: () -> Unit) {
 
     LazyVerticalStaggeredGrid(
         modifier = Modifier.padding(10.dp, 0.dp),
@@ -233,7 +224,7 @@ fun AlbumPreviewGrid(library: LibraryViewModel, onNavToAlbum: (String) -> Unit, 
     ) {
 
         items(albumList) {
-            AlbumPreview(it, onNavToAlbum)
+            AlbumGridItem(it, onNavToAlbum)
         }
 
         item {
@@ -242,16 +233,8 @@ fun AlbumPreviewGrid(library: LibraryViewModel, onNavToAlbum: (String) -> Unit, 
                     .width(150.dp)
                     .height(200.dp)
             ) {
-                if (loading) {
-                    val context = LocalContext.current
-                    LaunchedEffect(true) {
-                        if (root != null) {
-                            val result = browser.getChildren(root!!.mediaId, page, pageSize, null).await().value
-                            if (result != null) {
-                                albumList.addAll(result)
-                            }
-                        }
-                    }
+                if (!allLoaded) {
+                    LaunchedEffect(true) { load() }
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
                     Box(
@@ -274,7 +257,7 @@ fun AlbumPreviewGrid(library: LibraryViewModel, onNavToAlbum: (String) -> Unit, 
 
 @OptIn(ExperimentalGlideComposeApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun AlbumPreview(album: MediaItem, onNavToAlbum: (String) -> Unit) {
+fun AlbumGridItem(album: MediaItem, onNavToAlbum: (String) -> Unit) {
     Card(onClick = {
         onNavToAlbum(album.mediaId)
     }) {
@@ -314,18 +297,3 @@ fun AlbumPreview(album: MediaItem, onNavToAlbum: (String) -> Unit) {
     }
 
 }
-
-@Preview(showBackground = true)
-@Composable
-fun Test() {
-
-    Column {
-        Text(
-            text = "aaaaaaaaaaaaaaa",
-            fontSize = 18.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-

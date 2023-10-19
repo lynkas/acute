@@ -3,34 +3,61 @@ package cat.moki.acute
 import android.Manifest
 import android.content.ComponentName
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.*
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.surfaceColorAtElevation
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.neverEqualPolicy
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.tooling.preview.Preview
-import cat.moki.acute.ui.theme.AcuteTheme
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -39,23 +66,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.session.*
+import androidx.media3.session.MediaBrowser
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navigation
-import cat.moki.acute.models.Song
 import cat.moki.acute.client.Client
 import cat.moki.acute.client.NetClient
 import cat.moki.acute.models.Album
+import cat.moki.acute.models.Song
+import cat.moki.acute.ui.theme.AcuteTheme
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
@@ -106,13 +132,15 @@ class Home : ComponentActivity() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
-
+        val libraryLibrary: LibraryLibrary by viewModels()
 
         setContent {
             LaunchedEffect(Client.networkMetered.value) {
                 library.reset()
             }
-            val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+            val libraryViewMode by rememberSaveable { mutableStateOf(ViewBy.list) }
+
+            val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
             val systemUiController = rememberSystemUiController()
             val useDarkIcons = !isSystemInDarkTheme()
             val navController = rememberNavController()
@@ -151,7 +179,7 @@ class Home : ComponentActivity() {
                                     actions = {
                                         IconButton(onClick = { library.toggleView() }) {
                                             Icon(
-                                                imageVector = if (library.viewBy == ViewBy.list) Icons.Filled.GridView else Icons.Filled.List,
+                                                imageVector = if (libraryViewMode == ViewBy.list) Icons.Filled.GridView else Icons.Filled.List,
                                                 contentDescription = "Localized description"
                                             )
                                         }
@@ -206,15 +234,17 @@ class Home : ComponentActivity() {
                                 }
                                 composable("library") {
                                     if (browser.value != null) {
-                                        Library(library = library, onNavToAlbum = { albumID ->
-                                            navController.navigate("album/${albumID}") {
-                                                popUpTo(navController.graph.findStartDestination().id) {
-                                                    saveState = true
+                                        Library(
+                                            libraryLibrary = libraryLibrary,
+                                            onNavToAlbum = { albumID ->
+                                                navController.navigate("album/${albumID}") {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
+                                                    }
                                                 }
 
-                                            }
-
-                                        }, browser = browser.value!!)
+                                            }, browser = browser.value!!, mode = libraryViewMode
+                                        )
                                     }
                                 }
                                 composable("album/{albumID}") { backStackEntry ->
@@ -269,33 +299,6 @@ class Home : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-
-@Composable
-fun Library(library: LibraryViewModel, onNavToAlbum: (String) -> Unit, browser: MediaBrowser) {
-
-    if (library.viewBy == ViewBy.grid) {
-        AlbumPreviewGrid(library = library, onNavToAlbum = onNavToAlbum, browser)
-    }
-    if (library.viewBy == ViewBy.list) {
-        AlbumPreviewList(library = library, onNavToAlbum = onNavToAlbum)
-    }
-
-}
-
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    AcuteTheme {
-        Greeting("Android")
     }
 }
 

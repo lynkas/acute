@@ -107,6 +107,7 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
                 return future {
                     if (parentId == "root") {
                         val albums = Client.store(this@PlayerService).getAlbumList(size = pageSize, offset = pageSize * page)
+                        Log.d(TAG, "onGetChildren: children length: ${albums.size}")
                         return@future LibraryResult.ofItemList(albums.map { it.albumMediaItem }, params)
                     } else {
                         val (albumId, _) = parentId.extractComplexMediaId()

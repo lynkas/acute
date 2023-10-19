@@ -1,5 +1,6 @@
 package cat.moki.acute
 
+import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaController
 import cat.moki.acute.models.Album
@@ -31,10 +32,13 @@ fun String.extractComplexMediaId(): Pair<String, String> {
 //}
 
 val MediaItem.album: Album
-    get() = this.mediaMetadata.extras?.getParcelable("album")!!
+    get() {
+        val albumBundle = this.mediaMetadata.extras?.getBundle("album")
+        return albumBundle?.getParcelable<Album>("album")!! as Album
+    }
 
 val MediaItem.songs: List<MediaItem>?
     get() = this.album.songMediaItemList
 
 val MediaItem.song: Song
-    get() = this.mediaMetadata.extras?.getParcelable("song")!!
+    get() = this.mediaMetadata.extras?.getParcelable<Song>("song")!!

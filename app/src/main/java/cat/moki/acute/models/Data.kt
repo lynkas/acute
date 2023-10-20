@@ -4,6 +4,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Parcelable
 import android.provider.MediaStore.Audio.Media
+import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MediaMetadata.MEDIA_TYPE_ALBUM
@@ -16,6 +17,7 @@ import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.util.*
+import kotlin.collections.ArrayList
 
 data class Res(
     @SerializedName("subsonic-response")
@@ -99,26 +101,23 @@ data class Album(
         null
     )
 
-    @IgnoredOnParcel
-    @Ignore
-    private var _albumMediaItem: MediaItem? = null
-
-    @IgnoredOnParcel
-    @Ignore
-    private var _songMediaItemList: List<MediaItem>? = null
     fun find(songId: String): Song? = this.song?.find { song -> songId == song.id }
     val albumMediaItem: MediaItem
-        get() = if (_albumMediaItem != null) _albumMediaItem!! else {
-            _albumMediaItem = ToMediaItem(null, this)
-            _albumMediaItem!!
+        get() {
+            Log.d("TAG", "ToMediaItem: albumMediaItem")
+            return ToMediaItem(null, this)
         }
     val songMediaItemList: List<MediaItem>?
-        get() = if (_songMediaItemList != null) _songMediaItemList else {
-            _songMediaItemList = song?.map { s -> ToMediaItem(s.id, this) }
-            _songMediaItemList
+        get() = song?.map { s ->
+            Log.d("TAG", "ToMediaItem: songMediaItemList")
+            ToMediaItem(s.id, this)
         }
+
     val sameArtist: Boolean
         get() = song?.all { it.artist == this.artist } ?: false
+
+    val realTitle: String?
+        get() = if (name == "") title else name
 
 }
 
@@ -175,18 +174,19 @@ data class Song(
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 fun ToMediaItem(songId: String?, album: Album): MediaItem = MediaItem.Builder().apply {
-    setMediaId(songId ?: (album.id))
+    var mediaId = songId
+    if (mediaId == "" || mediaId == null) mediaId = album.id
+    setMediaId(mediaId)
     val song = album.song?.find { it.id == songId }
     if (songId != null) {
         setUri(NetClient.getStreamUrl(songId))
         setMimeType(MimeTypes.getAudioMediaMimeType(song?.suffix))
     }
-
+    val albumTitle = album.realTitle
     setMediaMetadata(
         MediaMetadata.Builder()
             .apply {
                 setArtworkUri(Uri.parse(NetClient.getCoverArtUrl(album.id)))
-                val albumTitle = if (album.name == "") album.title else album.name
                 if (song != null) {
                     setArtist(song.artist)
                     setMediaType(MEDIA_TYPE_MUSIC)
@@ -200,16 +200,12 @@ fun ToMediaItem(songId: String?, album: Album): MediaItem = MediaItem.Builder().
                 setIsPlayable(song != null)
                 setAlbumTitle(albumTitle)
                 setAlbumArtist(album.artist)
-                val albumBundle = Bundle()
-                albumBundle.putParcelable("album", album)
-                albumBundle.classLoader = Album::class.java.classLoader
-                val songBundle = Bundle()
-                songBundle.putParcelable("song", song)
-                albumBundle.classLoader = Song::class.java.classLoader
-                val bundle = Bundle()
-                bundle.putBundle("album", albumBundle)
-                bundle.putBundle("song", songBundle)
-                setExtras(bundle)
+                val data = Bundle()
+                Log.d("TAG", "ToMediaItem: ${album.song?.size}")
+                data.putParcelable("album", album)
+                data.putParcelable("song", song)
+                data.putParcelableArrayList("songs", album.song?.let { ArrayList(it) })
+                setExtras(data)
             }.build()
 
     )

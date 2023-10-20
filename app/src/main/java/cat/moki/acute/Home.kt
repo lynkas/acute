@@ -66,7 +66,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -133,18 +135,17 @@ class Home : ComponentActivity() {
             ) != PackageManager.PERMISSION_GRANTED
         ) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         val libraryLibrary: LibraryLibrary by viewModels()
+        val albumDetailData: AlbumDetailData by viewModels()
 
         setContent {
             LaunchedEffect(Client.networkMetered.value) {
                 library.reset()
             }
-            val libraryViewMode by rememberSaveable { mutableStateOf(ViewBy.list) }
-
+            var libraryViewMode by rememberSaveable { mutableStateOf(ViewBy.list) }
             val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-            val systemUiController = rememberSystemUiController()
-            val useDarkIcons = !isSystemInDarkTheme()
             val navController = rememberNavController()
             var showBottomSheet by remember { mutableStateOf(false) }
+            var openedAlbum by rememberSaveable { mutableStateOf<MediaItem?>(null) }
             val sheetState = rememberModalBottomSheetState()
             val scope = rememberCoroutineScope()
 
@@ -177,7 +178,7 @@ class Home : ComponentActivity() {
                                         }
                                     },
                                     actions = {
-                                        IconButton(onClick = { library.toggleView() }) {
+                                        IconButton(onClick = { libraryViewMode = if (libraryViewMode == ViewBy.list) ViewBy.grid else ViewBy.list }) {
                                             Icon(
                                                 imageVector = if (libraryViewMode == ViewBy.list) Icons.Filled.GridView else Icons.Filled.List,
                                                 contentDescription = "Localized description"
@@ -236,11 +237,10 @@ class Home : ComponentActivity() {
                                     if (browser.value != null) {
                                         Library(
                                             libraryLibrary = libraryLibrary,
-                                            onNavToAlbum = { albumID ->
-                                                navController.navigate("album/${albumID}") {
-                                                    popUpTo(navController.graph.findStartDestination().id) {
-                                                        saveState = true
-                                                    }
+                                            onNavToAlbum = { album ->
+                                                albumDetailData.album.value = album.album
+                                                navController.navigate("album/${album.mediaId}") {
+                                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                                 }
 
                                             }, browser = browser.value!!, mode = libraryViewMode
@@ -248,27 +248,25 @@ class Home : ComponentActivity() {
                                     }
                                 }
                                 composable("album/{albumID}") { backStackEntry ->
-                                    var album by rememberSaveable { mutableStateOf<Album?>(null) }
-                                    val context = LocalContext.current
                                     LaunchedEffect(true) {
                                         val albumId = backStackEntry.arguments?.getString("albumID")!!
-                                        Log.d("TAG", "onCreate: $albumId")
-                                        album = browser.value?.getItem("$albumId/")?.await()?.value?.album
-
+                                        val result = browser.value?.getItem("$albumId/")?.await()
+                                        if (result != null) {
+                                            if (result.resultCode == LibraryResult.RESULT_SUCCESS) {
+                                                albumDetailData.album.value = result.value?.album
+                                            }
+                                        }
                                     }
-
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .fillMaxHeight()
                                     ) {
-                                        album?.let {
+                                        albumDetailData.album.value?.let {
                                             AlbumDetailComponent(
-                                                album = it.albumMediaItem,
-                                                addSong = { song -> browser.value?.addMediaItem(song) }
+                                                album = it,
+                                                addSong = { song -> browser.value?.addMediaItem(song) },
                                             )
-                                        } ?: run {
-                                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                                         }
                                     }
                                 }

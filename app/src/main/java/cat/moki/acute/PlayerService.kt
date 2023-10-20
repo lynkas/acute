@@ -90,8 +90,8 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
                 Log.d(TAG, "onGetItem: $albumId, $songId")
                 return future {
                     val album = Client.store(this@PlayerService).getAlbumDetail(albumId)
-                    val song = album.find(songId)
-                    LibraryResult.ofItem(ToMediaItem(song?.id, album), null)
+                    Log.d(TAG, "onGetItem: ${album.song?.size}")
+                    LibraryResult.ofItem(ToMediaItem(songId, album), null)
                 }
             }
 
@@ -112,6 +112,7 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
                     } else {
                         val (albumId, _) = parentId.extractComplexMediaId()
                         val album = Client.store(this@PlayerService).getAlbumDetail(albumId)
+                        Log.d(TAG, "onGetChildren: else")
                         val mediaItems: List<MediaItem> = album.songMediaItemList ?: emptyList()
                         return@future LibraryResult.ofItemList(mediaItems, params)
                     }

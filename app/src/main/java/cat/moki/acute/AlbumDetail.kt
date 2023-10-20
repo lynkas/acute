@@ -21,12 +21,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
@@ -37,11 +40,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
+import androidx.media3.session.MediaBrowser
 import cat.moki.acute.models.Album
 import cat.moki.acute.models.Song
 import cat.moki.acute.client.NetClient
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import cat.moki.acute.models.ToMediaItem
 
 class AlbumDetail : ComponentActivity() {
     private lateinit var album: Album
@@ -58,29 +66,28 @@ class AlbumDetail : ComponentActivity() {
 @Composable
 fun AlbumDetailComponent(
     scrollState: ScrollState = rememberScrollState(initial = 0),
-    album: MediaItem,
-    addSong: (MediaItem) -> Unit
+    album: Album,
+    addSong: (MediaItem) -> Unit,
 ) {
     Column(
         modifier = Modifier.verticalScroll(scrollState)
     ) {
 
-        val albumItem = album.album
-        Log.d("TAG", NetClient.getCoverArtUrl(album.mediaId))
-        AlbumDetailHeadPic(NetClient.getCoverArtUrl(album.mediaId), scrollState.value)
+        AlbumDetailHeadPic(NetClient.getCoverArtUrl(album.id), scrollState.value)
         AlbumDetailHeadInfo(
-            artist = album.mediaMetadata.artist.toString(),
-            title = album.mediaMetadata.title.toString(),
-            duration = albumItem.duration,
-            songCount = albumItem.songCount
+            artist = album.artist,
+            title = album.realTitle ?: "",
+            duration = album.duration,
+            songCount = album.songCount
         )
 
-        val songs = album.songs
-        songs?.let {
-            for ((index, song) in songs.withIndex()) {
-                SongListItem(album, song = song, sameArtist = albumItem.sameArtist, addSong)
-                if (index + 1 != songs.size) Divider(Modifier.padding(horizontal = 12.dp))
+        album.song?.let {
+            for ((index, s) in it.withIndex()) {
+                SongListItem(album, song = s, sameArtist = album.sameArtist, addSong)
+                if (index + 1 != it.size) Divider(Modifier.padding(horizontal = 12.dp))
             }
+        } ?: run {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         }
     }
 }
@@ -149,16 +156,14 @@ fun AlbumDetailHeadInfo(title: String, artist: String, duration: Int, songCount:
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SongListItem(album: MediaItem, song: MediaItem, sameArtist: Boolean, addSong: (MediaItem) -> Unit) {
-    val context = LocalContext.current
-    val songItem = song.song
+fun SongListItem(album: Album, song: Song, sameArtist: Boolean, addSong: (MediaItem) -> Unit) {
     Card(shape = RoundedCornerShape(0.dp), onClick = {
-        addSong(song)
+        addSong(ToMediaItem(song.id, album))
     }) {
         ListItem(
             headlineContent = {
                 Text(
-                    text = song.mediaMetadata.title.toString(),
+                    text = song.title,
                     fontSize = 18.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -167,14 +172,14 @@ fun SongListItem(album: MediaItem, song: MediaItem, sameArtist: Boolean, addSong
             supportingContent = {
                 if (!sameArtist)
                     Text(
-                        text = song.mediaMetadata.artist.toString(),
+                        text = song.artist,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
             },
             trailingContent = {
                 Text(
-                    text = "${songItem.duration.formatSecond()} ",
+                    text = "${song.duration.formatSecond()} ",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

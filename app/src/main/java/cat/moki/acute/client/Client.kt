@@ -2,6 +2,7 @@ package cat.moki.acute.client
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateOf
+import cat.moki.acute.AcuteApplication
 import cat.moki.acute.models.Res
 import cat.moki.acute.models.SubsonicResponse
 import com.bumptech.glide.Glide
@@ -17,30 +18,30 @@ class RequestFailedException : Exception()
 
 
 object Client {
-    var networkMetered = mutableStateOf(false)
+//    var networkMetered = mutableStateOf(false)
 
     enum class Type {
         Local,
         Online
     }
 
-    fun store(context: Context, type: Type? = Type.Online): IQuery {
+    fun store(context: Context, serverId: String, type: Type? = null): IQuery {
         val client = when (type) {
-            Type.Online -> online(context = context)
-            else -> when (networkMetered.value) {
-                true -> local(context = context)
-                false -> online(context = context)
+            Type.Online -> online(context = context, serverId)
+            else -> when (AcuteApplication.useInternet) {
+                true -> online(context = context, serverId)
+                false -> local(context = context, serverId)
             }
         }
         return client
     }
 
-    private fun online(context: Context): IQuery {
-        return OnlineClient(context = context)
+    private fun online(context: Context, serverId: String): IQuery {
+        return OnlineClient(context = context, serverId = serverId)
     }
 
-    private fun local(context: Context): IQuery {
-        return LocalClient(context = context)
+    private fun local(context: Context, serverId: String): IQuery {
+        return LocalClient(context = context, serverId = serverId)
     }
 
 }

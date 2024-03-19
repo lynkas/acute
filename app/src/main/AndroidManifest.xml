@@ -5,9 +5,17 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".AcuteApplication"
@@ -23,12 +31,50 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <service
-            android:name=".PlayerService"
-            android:foregroundServiceType="mediaPlayback"
+            android:name=".services.TrackDownloadService"
+            android:enabled="true"
+            android:foregroundServiceType="dataSync"
+            android:exported="true" />
+
+        <activity
+            android:name=".EntryActivity"
+            android:exported="true"
+            android:label="@string/title_activity_entry"
+            android:noHistory="true"
+            android:theme="@style/Theme.Acute">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".AuthenticatorService"
             android:exported="true">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
+
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true"
+            android:label=""
+            android:theme="@style/Theme.Acute" />
+
+        <service
+            android:name=".services.PlayerService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaSessionService" />
                 <action android:name="android.media.browse.MediaBrowserService" />
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </service>
 
@@ -36,39 +82,25 @@
             android:name="org.apache.http.legacy"
             android:required="false" />
 
-
         <activity
             android:name=".Home"
             android:exported="true"
             android:label="@string/title_activity_home"
             android:theme="@style/Theme.Acute">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity> <!-- <activity -->
-        <!-- android:name=".Player" -->
-        <!-- android:exported="true" -->
-        <!-- android:label="@string/title_activity_player" -->
-        <!-- android:theme="@style/Theme.Acute"> -->
-        <!-- <meta-data -->
-        <!-- android:name="android.app.lib_name" -->
-        <!-- android:value="" /> -->
-        <!-- </activity> -->
-        <activity
-            android:name=".AlbumDetail"
-            android:exported="false"
-            android:label="@string/title_activity_album_detail"
-            android:theme="@style/Theme.Acute">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="cat.moki.acute"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:grantUriPermissions="true"
+                android:resource="@xml/files" />
+        </provider>
     </application>
 
 </manifest>

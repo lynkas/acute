@@ -7,17 +7,23 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import cat.moki.acute.models.Album
 import cat.moki.acute.models.AlbumDao
+import cat.moki.acute.models.Artist
+import cat.moki.acute.models.ArtistDao
 import cat.moki.acute.models.Converters
+import cat.moki.acute.models.Playlist
+import cat.moki.acute.models.PlaylistDao
 import cat.moki.acute.models.Song
 import cat.moki.acute.models.SongDao
 
-val DATABASE_NAME = "cache1.db"
+val DATABASE_NAME = "cache4.db"
 
-@Database(entities = [Album::class, Song::class], version = 1, exportSchema = false)
+@Database(entities = [Album::class, Song::class, Playlist::class, Artist::class], version = 8, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun album(): AlbumDao
     abstract fun song(): SongDao
+    abstract fun playlist(): PlaylistDao
+    abstract fun artist(): ArtistDao
 
     companion object {
 
@@ -32,7 +38,10 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         private fun buildDatabase(context: Context): AppDatabase {
-            return Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME).allowMainThreadQueries().build()
+            return Room.databaseBuilder(context, AppDatabase::class.java, DATABASE_NAME)
+                .fallbackToDestructiveMigration()
+                .allowMainThreadQueries()
+                .build()
         }
     }
 }

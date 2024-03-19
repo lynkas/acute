@@ -17,14 +17,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import cat.moki.acute.models.Album
 import cat.moki.acute.models.Song
 import cat.moki.acute.client.NetClient
+import cat.moki.acute.services.PlayerService
 import cat.moki.acute.ui.theme.AcuteTheme
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import com.bumptech.glide.integration.compose.GlideImage
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 
@@ -40,6 +40,7 @@ class SinglePlayer : ComponentActivity() {
     private lateinit var controllerFuture: ListenableFuture<MediaController>
 
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializeController() {
         controllerFuture =
             MediaController.Builder(
@@ -89,7 +90,6 @@ class SinglePlayer : ComponentActivity() {
 }
 
 
-@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun PlayerPage(album: Album, song: Song, player: MediaController?) {
 
@@ -104,16 +104,16 @@ fun PlayerPage(album: Album, song: Song, player: MediaController?) {
             .fillMaxWidth()
             .padding(top = 64.dp)
         ) {
-            Card(modifier = Modifier.align(Alignment.Center)) {
-                GlideImage(
-                    model = album.coverArt?.let { NetClient.getCoverArtUrl(it) },
-                    contentDescription = "aaaa",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .aspectRatio(1f)
-                )
-            }
+//            Card(modifier = Modifier.align(Alignment.Center)) {
+//                GlideImage(
+//                    model = album.coverArt?.let { NetClient.getCoverArtUrl(it) },
+//                    contentDescription = "aaaa",
+//                    contentScale = ContentScale.Crop,
+//                    modifier = Modifier
+//                        .fillMaxWidth(0.8f)
+//                        .aspectRatio(1f)
+//                )
+//            }
 
         }
         Box(modifier = Modifier.constrainAs(text) {
@@ -141,14 +141,16 @@ fun PlayerPage(album: Album, song: Song, player: MediaController?) {
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = song.artist,
-                    fontSize = 18.sp,
-                    modifier = Modifier.alpha(0.6f),
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                song.artist?.let {
+                    Text(
+                        text = it,
+                        fontSize = 18.sp,
+                        modifier = Modifier.alpha(0.6f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
             }
 

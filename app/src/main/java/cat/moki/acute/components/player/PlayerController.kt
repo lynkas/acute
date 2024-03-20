@@ -89,21 +89,21 @@ fun RoundProgressButton(
         }
         // background
         CircularProgressIndicator(
+            100f,
             modifier = Modifier
                 .align(Alignment.Center)
                 .height(48.dp)
                 .aspectRatio(1f),
             color = MaterialTheme.colorScheme.background,
-            progress = 100f
         )
         // loading
         CircularProgressIndicator(
+            player.loadingTime.longValue.toFloat() / player.totalTime.longValue.toFloat(),
             modifier = Modifier
                 .align(Alignment.Center)
                 .height(48.dp)
                 .aspectRatio(1f),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.16f),
-            progress = player.loadingTime.longValue.toFloat() / player.totalTime.longValue.toFloat()
         )
         // playing
 
@@ -116,11 +116,11 @@ fun RoundProgressButton(
             )
         } else {
             CircularProgressIndicator(
+                player.playTime.toFloat() / (player.totalTime.longValue.toFloat()),
                 modifier = Modifier
                     .align(Alignment.Center)
                     .height(48.dp)
                     .aspectRatio(1f),
-                progress = player.playTime.toFloat() / (player.totalTime.longValue.toFloat())
             )
         }
 

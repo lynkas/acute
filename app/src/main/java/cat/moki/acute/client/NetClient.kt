@@ -93,7 +93,7 @@ object NetClient {
 }
 
 class NetLink(val builder: HttpUrl.Builder, val serverId: String) {
-    fun getCoverArtUrl(id: String, size: Int? = 256): String {
+    fun getCoverArtUrl(id: String, size: Int? = 512): String {
         builder.apply {
             addPathSegment("getCoverArt")
             addQueryParameter("id", id)

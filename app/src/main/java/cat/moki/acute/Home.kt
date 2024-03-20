@@ -89,7 +89,6 @@ class Home : ComponentActivity() {
     @androidx.annotation.OptIn(UnstableApi::class)
     override fun onStart() {
         super.onStart()
-        initializeBrowser()
     }
 
     @androidx.annotation.OptIn(UnstableApi::class)
@@ -246,6 +245,10 @@ class Home : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        initializeBrowser()
+    }
 
     override fun onPause() {
         super.onPause()
@@ -256,7 +259,6 @@ class Home : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        browser?.release()
 
     }
 }

@@ -31,7 +31,7 @@ fun RoundProgressButton(
         button()
         // background
         CircularProgressIndicator(
-            progress = { 1f },
+            progress = 1f,
             modifier = Modifier
                 .align(Alignment.Center)
                 .aspectRatio(1f)
@@ -39,7 +39,7 @@ fun RoundProgressButton(
             color = MaterialTheme.colorScheme.background,
         )
         CircularProgressIndicator(
-            progress = { value },
+            progress = value,
             modifier = Modifier
                 .align(Alignment.Center)
                 .then(modifier)

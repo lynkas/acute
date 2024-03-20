@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import cat.moki.acute.AcuteApplication
 import cat.moki.acute.client.NetClient
 import cat.moki.acute.components.PlayerViewModelLocal
@@ -39,13 +40,14 @@ import cat.moki.acute.services.LocalSimpleCache
 import cat.moki.acute.utils.conditional
 
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SongListItem(
     song: MediaItem,
     sameArtist: Boolean,
     menuOpenIndex: MutableState<Int>,
-    index: Int
+    index: Int, expand: MutableState<Boolean>
 ) {
     val TAG = "SongListItem"
     val player = PlayerViewModelLocal.current
@@ -68,7 +70,7 @@ fun SongListItem(
     }
 
 
-    LaunchedEffect(song) {
+    LaunchedEffect(song, expand.value) {
         Log.d(TAG, "SongListItem: ${song}")
         cached.value = AcuteApplication.fullyCached(song.cacheInfo)
         Log.d(TAG, "SongListItem: ${cached.value}")
@@ -114,8 +116,10 @@ fun SongListItem(
                     )
             },
             trailingContent = {
-                if (cached.value)
-                    Icon(Icons.Rounded.OfflinePin, "")
+                if (expand.value) {
+                    if (cached.value)
+                        Icon(Icons.Rounded.OfflinePin, "")
+                }
             },
         )
     }

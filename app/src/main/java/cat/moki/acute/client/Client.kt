@@ -1,11 +1,9 @@
 package cat.moki.acute.client
 
 import android.content.Context
-import androidx.compose.runtime.mutableStateOf
 import cat.moki.acute.AcuteApplication
 import cat.moki.acute.models.Res
 import cat.moki.acute.models.SubsonicResponse
-import com.bumptech.glide.Glide
 import com.google.gson.reflect.TypeToken
 import okhttp3.ResponseBody
 import retrofit2.Converter

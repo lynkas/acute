@@ -30,6 +30,10 @@
         android:theme="@style/Theme.Acute"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
+        <meta-data
+            android:name="cat.moki.acute.utils.MyGlideAppModule"
+            android:value="AppGlideModule" />
+
         <service
             android:name=".services.TrackDownloadService"
             android:enabled="true"

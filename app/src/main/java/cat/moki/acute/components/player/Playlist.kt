@@ -26,20 +26,17 @@ import androidx.compose.material.icons.outlined.PlaylistRemove
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.RepeatOne
 import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -167,58 +164,61 @@ fun PlayList(
                 }
             }
 
-            val swipeToDismissBoxState = rememberSwipeToDismissBoxState(positionalThreshold = {
-                swipeMax.value = it
-                it * threshold
-            }, confirmValueChange = {
-                Log.d(TAG, "confirmValueChange: $it")
-                if (it != SwipeToDismissBoxValue.Settled) {
-                    listChangeUpdate(realIndex)
-                }
-                true
-            })
+//            val swipeToDismissBoxState = rememberSwipeToDismissBoxState(positionalThreshold = {
+//                swipeMax.value = it
+//                it * threshold
+//            }, confirmValueChange = {
+//                Log.d(TAG, "confirmValueChange: $it")
+//                if (it != SwipeToDismissBoxValue.Settled) {
+//                    listChangeUpdate(realIndex)
+//                }
+//                true
+//            })
 
 
-            fun offsetPercentage(): Float {
-                val offset = try {
-                    abs(swipeToDismissBoxState.requireOffset())
-                } catch (e: Exception) {
-                    0f
-                }
-                return offset / swipeMax.floatValue
-            }
+//            fun offsetPercentage(): Float {
+//                val offset = try {
+//                    abs(swipeToDismissBoxState.requireOffset())
+//                } catch (e: Exception) {
+//                    0f
+//                }
+//                return offset / swipeMax.floatValue
+//            }
 
             @Composable
             fun ItemWrap(content: @Composable () -> Unit) {
                 var columnHeightDp by remember {
                     mutableStateOf(0.dp)
                 }
-
-                if (editListMode.value) {
-                    SwipeToDismissBox(
-                        state = swipeToDismissBoxState,
-                        backgroundContent = {
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        color = Color
-                                            .hsl(10f, 0.6f, 0.34f)
-                                            .copy(alpha = offsetPercentage())
-                                    )
-                                    .fillMaxWidth()
-                            )
-                        },
-                        enableDismissFromEndToStart = true
-                    ) {
-                        content()
-                    }
-                } else {
-                    Box {
-                        content()
-
-                    }
+                Box {
+                    content()
 
                 }
+//                if (editListMode.value) {
+//                    SwipeToDismissBox(
+//                        state = swipeToDismissBoxState,
+//                        backgroundContent = {
+//                            Box(
+//                                modifier = Modifier
+//                                    .background(
+//                                        color = Color
+//                                            .hsl(10f, 0.6f, 0.34f)
+//                                            .copy(alpha = offsetPercentage())
+//                                    )
+//                                    .fillMaxWidth()
+//                            )
+//                        },
+//                        enableDismissFromEndToStart = true
+//                    ) {
+//                        content()
+//                    }
+//                } else {
+//                    Box {
+//                        content()
+//
+//                    }
+//
+//                }
             }
 
             ItemWrap {
@@ -247,7 +247,7 @@ fun PlayList(
                                                     Color.Unspecified
                                                 }
                                             )
-                                            HorizontalDivider()
+                                            Divider()
                                             Text((player.totalTime.longValue.toInt() / 1000).formatSecond())
                                         }
                                         Spacer(modifier = Modifier.weight(1f))
@@ -328,10 +328,14 @@ fun PlayList(
                                                         Icons.Outlined.Shuffle,
                                                         modifier = Modifier.size(24.dp),
                                                         contentDescription = "",
-                                                        tint = LocalContentColor.current.copy(alpha = 0.4f),
                                                     )
 
-                                                    false -> Icon(Icons.Outlined.Shuffle, modifier = Modifier.size(24.dp), contentDescription = "")
+                                                    false -> Icon(
+                                                        Icons.Outlined.Shuffle,
+                                                        modifier = Modifier.size(24.dp),
+                                                        contentDescription = "",
+                                                        tint = LocalContentColor.current.copy(alpha = 0.4f),
+                                                    )
                                                 }
                                             }
                                             IconButton(
@@ -396,7 +400,7 @@ fun PlayList(
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                 ) {
-                    HorizontalDivider(
+                    Divider(
                         modifier = Modifier
                             .fillMaxWidth(0.9f)
                             .align(Alignment.Center)

@@ -78,12 +78,12 @@ data class SubsonicResponse(
         }
 
         searchResult3?.let {
-            it.song.forEach { it.server = serverId }
-            it.album.forEach {
+            it.song?.forEach { it.server = serverId }
+            it.album?.forEach {
                 it.server = serverId
                 it.song?.forEach { it.server = serverId }
             }
-            it.artist.forEach { it.server = serverId }
+            it.artist?.forEach { it.server = serverId }
         }
 
 

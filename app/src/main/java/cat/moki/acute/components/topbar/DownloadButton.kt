@@ -4,6 +4,7 @@ import androidx.annotation.OptIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.Badge
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -22,6 +23,7 @@ import cat.moki.acute.routes.Strings
 import cat.moki.acute.viewModels.DownloadEvent
 import kotlinx.coroutines.launch
 
+@kotlin.OptIn(ExperimentalMaterial3Api::class)
 @OptIn(UnstableApi::class)
 @Composable
 fun DownloadButton() {

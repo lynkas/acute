@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -65,14 +66,13 @@ import cat.moki.acute.models.rawUrl
 import cat.moki.acute.models.songs
 import cat.moki.acute.services.TrackDownloadService
 
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.glide.GlideImage
 import kotlin.math.pow
 
 @Composable
 fun AlbumDetailComponent(albumId: MediaId) {
 
     val library = LibraryViewModelLocal.current
+    var expand = remember { mutableStateOf(false) }
 
     val menuOpenIndex = remember { mutableIntStateOf(-1) }
     val duration = rememberSaveable { mutableLongStateOf(1L) }
@@ -114,7 +114,8 @@ fun AlbumDetailComponent(albumId: MediaId) {
                 album = it,
                 duration = duration.longValue,
                 songCount = songList.size,
-                scrollPosition = scrollState.value
+                scrollPosition = scrollState.value,
+                expand
             )
         }
 
@@ -126,7 +127,8 @@ fun AlbumDetailComponent(albumId: MediaId) {
                 song = song,
                 sameArtist = song.mediaMetadata.artist == albumItem.value?.mediaMetadata?.artist,
                 menuOpenIndex = menuOpenIndex,
-                index = index
+                index = index,
+                expand
             )
             if (index + 1 != songList.size) {
                 Row {
@@ -156,8 +158,7 @@ fun AlbumTimeAndTracksInfo(ms: Long, tracksNumber: Int) {
 
 @OptIn(UnstableApi::class)
 @Composable
-fun AlbumDetailHeadInfo(album: MediaItem, duration: Long, songCount: Int, scrollPosition: Int) {
-    var expand by remember { mutableStateOf(false) }
+fun AlbumDetailHeadInfo(album: MediaItem, duration: Long, songCount: Int, scrollPosition: Int, expand: MutableState<Boolean>) {
     val TAG = "AlbumDetailHeadInfo"
     val context = LocalContext.current
     val artist = album.mediaMetadata.albumArtist
@@ -180,7 +181,7 @@ fun AlbumDetailHeadInfo(album: MediaItem, duration: Long, songCount: Int, scroll
             ) {
                 Row(modifier = Modifier.fillMaxWidth(1f)) {
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier,
                         horizontalAlignment = Alignment.Start
                     ) {
                         TitleBracketScale(text = title.toString(), fontSize = 26.sp, lineHeight = 32.sp)
@@ -188,25 +189,29 @@ fun AlbumDetailHeadInfo(album: MediaItem, duration: Long, songCount: Int, scroll
                         AlbumTimeAndTracksInfo(duration, songCount)
                     }
                     Spacer(modifier = Modifier.weight(1f))
-                    Box(modifier = Modifier.fillMaxHeight()) {
-                        IconButton(onClick = { expand = !expand }) {
-                            Icon(if (expand) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, "show menu")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .align(Alignment.CenterVertically)
+                    ) {
+                        IconButton(onClick = { expand.value = !expand.value }) {
+                            Icon(if (expand.value) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, "show menu")
                         }
                     }
                 }
             }
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                IconButton(onClick = {
-                    album.songs?.map { it.mediaItem }?.forEach {
-                        DownloadService.sendAddDownload(
-                            context, TrackDownloadService::class.java,
-                            DownloadRequest.Builder(it.localMediaId.toString(), it.rawUrl.toUri()).build(), true
-                        )
-                        Log.d(TAG, "AlbumDetailHeadInfo: add ${it.localMediaId} to download")
-                    }
-                }) { Icon(Icons.Outlined.Download, "download the album") }
-            }
+            if (expand.value)
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    IconButton(onClick = {
+                        album.songs?.map { it.mediaItem }?.forEach {
+                            DownloadService.sendAddDownload(
+                                context, TrackDownloadService::class.java,
+                                DownloadRequest.Builder(it.localMediaId.toString(), it.rawUrl.toUri()).build(), true
+                            )
+                            Log.d(TAG, "AlbumDetailHeadInfo: add ${it.localMediaId} to download")
+                        }
+                    }) { Icon(Icons.Outlined.Download, "download the album") }
+                }
 
         }
     }

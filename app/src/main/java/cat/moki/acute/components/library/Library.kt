@@ -43,12 +43,11 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavOptions
 import cat.moki.acute.components.LibraryViewModelLocal
 import cat.moki.acute.components.NavControllerLocal
+import cat.moki.acute.components.utils.ChangeableCoverPic
 import cat.moki.acute.components.utils.TitleBracketScale
 import cat.moki.acute.models.localMediaId
 import cat.moki.acute.routes.Strings
 import cat.moki.acute.routes.Strings.Companion.AlbumId
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.glide.GlideImage
 import kotlinx.coroutines.launch
 
 enum class ViewBy {
@@ -141,18 +140,7 @@ fun AlbumListItem(album: MediaItem) {
 
             },
         leadingContent = {
-
-            GlideImage(
-                imageModel = { album.mediaMetadata.artworkUri },
-                imageOptions = ImageOptions(contentScale = ContentScale.Crop),
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .aspectRatio(1f)
-                    .clip(shape = RoundedCornerShape(8.dp)),
-                loading = { Icon(Icons.Filled.Downloading, contentDescription = "") },
-                failure = { Icon(Icons.Filled.LibraryMusic, contentDescription = "") }
-            )
-
+            ChangeableCoverPic(modifier = Modifier.clip(shape = RoundedCornerShape(8.dp)), albumPic = album.mediaMetadata.artworkUri)
         },
         headlineContent = {
             TitleBracketScale(
@@ -227,16 +215,7 @@ fun AlbumPreviewGrid(onNavToAlbum: (MediaItem) -> Unit) {
 @Composable
 fun AlbumGridItem(album: MediaItem, onNavToAlbum: (MediaItem) -> Unit) {
     Column(modifier = Modifier.clickable { onNavToAlbum(album) }) {
-        GlideImage(
-            imageModel = { album.mediaMetadata.artworkUri },
-            imageOptions = ImageOptions(contentScale = ContentScale.Crop),
-            modifier = Modifier
-                .fillMaxHeight()
-                .aspectRatio(1f)
-                .clip(shape = RoundedCornerShape(8.dp)),
-            loading = { Icon(Icons.Filled.Downloading, contentDescription = "") },
-            failure = { Icon(Icons.Filled.LibraryMusic, contentDescription = "") }
-        )
+        ChangeableCoverPic(modifier = Modifier.clip(shape = RoundedCornerShape(8.dp)), albumPic = album.mediaMetadata.artworkUri)
         Text(
             text = album.mediaMetadata.albumTitle.toString(),
             fontSize = 20.sp,

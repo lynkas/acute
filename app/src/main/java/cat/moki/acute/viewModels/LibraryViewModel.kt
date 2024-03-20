@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaBrowser
 import cat.moki.acute.AcuteApplication
@@ -22,6 +23,8 @@ import kotlinx.coroutines.guava.await
 class LibraryViewModel : ViewModel() {
 
     var loaded = mutableStateOf(false)
+
+    @UnstableApi
     var serverId = mutableStateOf(AcuteApplication.application.defaultServerId!!)
     val albumList = mutableStateListOf<MediaItem>()
     val size = mutableIntStateOf(20)
@@ -78,7 +81,7 @@ class LibraryViewModel : ViewModel() {
         result.value?.let {
             detail.value = result.value
         } ?: run {
-            Log.e("TAG", "getDetail: request error")
+            Log.e("TAG", "getDetail: request error ${result.resultCode}")
         }
 
         return detail.value

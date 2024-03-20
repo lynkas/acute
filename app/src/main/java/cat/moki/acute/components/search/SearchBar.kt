@@ -60,7 +60,8 @@ fun SearchBar(query: MutableState<String>, search: () -> Unit = {}, content: @Co
         if (searching.value) LinearProgressIndicator(progressModifier)
         else LinearProgressIndicator(
             modifier = progressModifier,
-            progress = { (currentTime.longValue - lastInputChange.value) / searchDelay.toFloat() })
+            progress = (currentTime.longValue - lastInputChange.value) / searchDelay.toFloat()
+        )
         content()
     }
 

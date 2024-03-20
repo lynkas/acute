@@ -2,6 +2,7 @@ package cat.moki.acute
 
 import android.accounts.Account
 import android.accounts.AccountManager
+import android.annotation.SuppressLint
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -51,7 +52,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.io.path.createDirectories
 
 
-@UnstableApi
+@SuppressLint("UnsafeOptInUsageError")
 class AcuteApplication : Application() {
 
     companion object {

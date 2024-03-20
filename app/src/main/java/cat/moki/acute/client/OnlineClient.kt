@@ -156,12 +156,12 @@ class OnlineClient(private val context: Context, private val serverId: String) :
             },
             unpack = { it.subsonicResponse.searchResult3 },
             cache = { db, it ->
-                db.song().insertAll(*it.song.toTypedArray())
-                db.album().insertAll(*it.album.toTypedArray())
-                it.album.forEach {
+                it.song?.let { it1 -> db.song().insertAll(*it1.toTypedArray()) }
+                it.album?.let { it1 -> db.album().insertAll(*it1.toTypedArray()) }
+                it.album?.forEach {
                     it.song?.toTypedArray()?.let { it1 -> db.song().insertAll(*it1) }
                 }
-                db.artist().insertAll(*it.artist.toTypedArray())
+                it.artist?.let { it1 -> db.artist().insertAll(*it1.toTypedArray()) }
             }
         )
     }

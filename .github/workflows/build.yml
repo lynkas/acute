@@ -4,8 +4,17 @@ on:
     tags:        
       - '**' 
 jobs:
-  setup:
+  get-runner:
+    name: get a runner to use for this workflow
     runs-on: ubuntu-latest
+    outputs:
+      RUNNER: ${{ runner.name }}
+    steps:
+      - run: echo "selected runner = ${{ runner.name }}"
+
+  setup:
+    needs: get-runner
+    runs-on: ${{needs.get-runner.outputs.RUNNER}}
     steps:
       - uses: actions/checkout@v4
       
@@ -18,16 +27,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
   build:
-    needs: setup
-    runs-on: ubuntu-latest
+    needs: get-runner
+    runs-on: ${{needs.get-runner.outputs.RUNNER}}
     steps:
       - name: Build Debug APKs
         run: ./gradlew --no-daemon assembleDebug
       - name: Build Release APKs
         run: ./gradlew --no-daemon assembleRelease
   release:
-    needs: build
-    runs-on: ubuntu-latest
+    needs: get-runner
+    runs-on: ${{needs.get-runner.outputs.RUNNER}}
     steps:
       - name: Release
         uses: softprops/action-gh-release@v2

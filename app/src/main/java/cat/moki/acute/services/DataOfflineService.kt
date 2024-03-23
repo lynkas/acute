@@ -1,8 +1,17 @@
 package cat.moki.acute.services
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import androidx.annotation.OptIn
+import androidx.core.app.NotificationCompat
+import androidx.media3.common.util.NotificationUtil
+import androidx.media3.common.util.NotificationUtil.createNotificationChannel
+import androidx.media3.common.util.UnstableApi
+import cat.moki.acute.R
 import cat.moki.acute.client.Client
 import cat.moki.acute.models.Album
 import cat.moki.acute.models.ServerCacheStatus
@@ -36,11 +45,47 @@ class DataOfflineService : Service(), CoroutineScope {
 
     }
 
+    fun createChannel() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(
+            "NOTIFICATION_CHANNEL_ID",
+            "NOTIFICATION_CHANNEL_NAME",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        notificationManager.createNotificationChannel(channel)
+
+    }
+
+    fun startNotification() {
+
+        startForeground(3, NotificationCompat.Builder(this, "NOTIFICATION_CHANNEL_ID").build())
+    }
+
+    fun endNotification() {
+        stopForeground(STOP_FOREGROUND_REMOVE)
+    }
+
+    @OptIn(UnstableApi::class)
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+
+        return super.onStartCommand(intent, flags, startId)
+    }
+
+    private fun createNotificationChannel(notificationManager: NotificationManager) {
+        val channel = NotificationChannel(
+            "NOTIFICATION_CHANNEL_ID",
+            "NOTIFICATION_CHANNEL_NAME",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        notificationManager.createNotificationChannel(channel)
+    }
 
     override val coroutineContext: CoroutineContext
         get() = TODO("Not yet implemented")
 
     suspend fun runServerTask(id: String) {
+        startNotification()
         val albumList = mutableListOf<Album>()
         var failedCount = 3
         var offset = 0

@@ -32,7 +32,6 @@ import kotlin.io.path.pathString
 import kotlin.math.log
 
 @androidx.annotation.OptIn(UnstableApi::class)
-@OptIn(ExperimentalEncodingApi::class)
 @Composable
 fun AudioFilesList() {
     val TAG = "AudioFilesList"

@@ -42,7 +42,7 @@ fun Login(
     server: String = "",
     username: String = "",
     password: String = "",
-    finish: suspend (credential: Credential) -> State
+    finish: (suspend (credential: Credential) -> State)? = null
 ) {
     val server = rememberSaveable { mutableStateOf(server) }
     val username = rememberSaveable { mutableStateOf(username) }
@@ -68,8 +68,10 @@ fun Login(
                     server.value + "/"
                 }, username.value, password.value
             )
-            coroutineScope.launch(Dispatchers.IO) {
-                status = finish(credential)
+            finish?.let {
+                coroutineScope.launch(Dispatchers.IO) {
+                    status = finish(credential)
+                }
             }
 
         }) {

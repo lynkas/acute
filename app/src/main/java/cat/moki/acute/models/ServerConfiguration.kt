@@ -5,7 +5,7 @@ import java.util.Date
 
 data class ServerConfiguration(
     val lastTimeFullyCache: Date? = null,
-    val onlyUseLocalData: Boolean = false
+    val onlyUseLocalMetaData: Boolean = false
 
 ) {
 

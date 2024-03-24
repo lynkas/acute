@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.NetworkLocked
 import androidx.compose.material3.Card
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Switch
@@ -134,11 +135,9 @@ fun ServerItem(credential: Credential) {
         },
         supportingContent = {
             if (menuExpand) {
-                Column {
+                Column(modifier = Modifier.padding(top = 4.dp)) {
                     ListItem(
-                        modifier = Modifier.clickable {
-
-                        },
+                        modifier = Modifier.clickable { serverEditOpen = true },
                         leadingContent = { Icon(Icons.Outlined.Edit, contentDescription = "") },
                         headlineContent = { Text("Edit") }
                     )
@@ -148,18 +147,20 @@ fun ServerItem(credential: Credential) {
                     )
 
                     fun changeInternetStatus(status: Boolean) {
-                        serverConfig = serverConfig.copy(onlyUseLocalData = status)
+                        serverConfig = serverConfig.copy(onlyUseLocalMetaData = status)
                         AcuteApplication.application.storage.updateServerConfiguration(credential.id, serverConfig)
                     }
 
                     ListItem(
-                        modifier = Modifier.clickable { changeInternetStatus(!serverConfig.onlyUseLocalData) },
+                        modifier = Modifier.clickable { changeInternetStatus(!serverConfig.onlyUseLocalMetaData) },
                         leadingContent = { Icon(Icons.Outlined.NetworkLocked, contentDescription = "") },
-                        headlineContent = { Text("Only use local data") },
+                        headlineContent = { Text("Only use local metadata") },
+                        supportingContent = { Text("albums, songs, playlists and covers information. not control audio data.") },
                         trailingContent = {
-                            Switch(checked = false, onCheckedChange = { changeInternetStatus(it) })
+                            Switch(checked = serverConfig.onlyUseLocalMetaData, onCheckedChange = { changeInternetStatus(it) })
                         }
                     )
+                    Divider()
                     ListItem(
                         leadingContent = { Icon(Icons.Outlined.DeleteOutline, contentDescription = "") },
                         headlineContent = { Text("Delete server info") },

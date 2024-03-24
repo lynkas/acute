@@ -75,9 +75,17 @@ class AcuteApplication : Application() {
                 0,
                 contentSize
             )
-
-
         }
+
+        val useOnlineSource
+            get() = internet.value
+                    && (!metered.value || !application.settings.internetWifiOnly)
+
+    }
+
+    fun serverMetadataUseInternet(serverId: String): Boolean {
+        if (application.storage.serverConfiguration[serverId]?.onlyUseLocalMetaData == true) return false
+        return useOnlineSource
     }
 
     val useOnlineSource

@@ -8,10 +8,7 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
-import androidx.media3.common.util.NotificationUtil
-import androidx.media3.common.util.NotificationUtil.createNotificationChannel
 import androidx.media3.common.util.UnstableApi
-import cat.moki.acute.R
 import cat.moki.acute.client.Client
 import cat.moki.acute.models.Album
 import cat.moki.acute.models.ServerCacheStatus
@@ -19,6 +16,7 @@ import cat.moki.acute.services.aidl.ICacheServer
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
@@ -27,20 +25,23 @@ typealias DownloadTask = suspend () -> Unit
 
 class DataOfflineService : Service(), CoroutineScope {
     val TAG = "DataOfflineService"
-    val taskStatus = mapOf<String, ServerCacheStatus>()
+    val taskStatus = mutableMapOf<String, ServerCacheStatus>()
+    val tasks = mutableMapOf<String, Job>()
 
     private val binder = object : ICacheServer.Stub() {
         override fun cacheOperation(operation: String, serverId: String) {
             when (operation) {
-                "start" -> launch(Dispatchers.IO) {
+                "start" -> tasks[serverId] = launch(Dispatchers.IO) {
                     runServerTask(serverId)
-
                 }
+
+                "cancel" -> tasks[serverId]?.cancel()
+
             }
         }
 
-        override fun cacheStatus(): MutableMap<String, ServerCacheStatus> {
-            TODO("Not yet implemented")
+        override fun cacheStatus(): Map<String, ServerCacheStatus> {
+            return taskStatus
         }
 
     }
@@ -57,7 +58,7 @@ class DataOfflineService : Service(), CoroutineScope {
     }
 
     fun startNotification() {
-
+        createChannel()
         startForeground(3, NotificationCompat.Builder(this, "NOTIFICATION_CHANNEL_ID").build())
     }
 
@@ -86,6 +87,7 @@ class DataOfflineService : Service(), CoroutineScope {
 
     suspend fun runServerTask(id: String) {
         startNotification()
+        taskStatus[id] = ServerCacheStatus(0, 1, "running")
         val albumList = mutableListOf<Album>()
         var failedCount = 3
         var offset = 0
@@ -95,15 +97,19 @@ class DataOfflineService : Service(), CoroutineScope {
             if (req.isEmpty()) break
             albumList.addAll(req)
             offset += req.size
+            taskStatus[id]?.let { taskStatus[id] = it.copy(totalTasks = albumList.size) }
         }
         albumList.forEach {
             val album = Client.store(this, id, Client.Type.Online).getAlbumDetail(it.id)
             Glide.with(this).load(album.id).submit()
+            taskStatus[id]?.let { taskStatus[id] = it.copy(finishedTask = it.finishedTask + 1) }
         }
 
         Client.store(this, id, Client.Type.Online).getPlaylists()
 
-
+        taskStatus[id]?.let { taskStatus[id] = it.copy(status = "finish") }
+        if (taskStatus.filter { (id, status) -> status.status == "running" }.isEmpty())
+            endNotification()
     }
 
     override fun onBind(intent: Intent?): IBinder {

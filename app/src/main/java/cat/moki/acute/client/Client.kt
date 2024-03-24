@@ -26,9 +26,12 @@ object Client {
     fun store(context: Context, serverId: String, type: Type? = null): IQuery {
         val client = when (type) {
             Type.Online -> online(context = context, serverId)
-            else -> when (AcuteApplication.useInternet) {
-                true -> online(context = context, serverId)
-                false -> local(context = context, serverId)
+            else -> {
+                val onlyLocal = AcuteApplication.application.storage.serverConfiguration[serverId]?.onlyUseLocalMetaData ?: false
+                when (AcuteApplication.useInternet && !onlyLocal) {
+                    true -> online(context = context, serverId)
+                    false -> local(context = context, serverId)
+                }
             }
         }
         return client

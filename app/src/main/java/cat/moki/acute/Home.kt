@@ -2,8 +2,10 @@ package cat.moki.acute
 
 import android.Manifest
 import android.content.ComponentName
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -67,11 +69,14 @@ import cat.moki.acute.components.setting.AudioFilesList
 import cat.moki.acute.components.setting.Setting
 import cat.moki.acute.components.topbar.DownloadButton
 import cat.moki.acute.components.topbar.SearchButton
+import cat.moki.acute.models.ServerCacheStatus
 import cat.moki.acute.viewModels.LibraryViewModel
 import cat.moki.acute.viewModels.PlayerViewModel
 import cat.moki.acute.models.toMediaId
 import cat.moki.acute.routes.Strings
+import cat.moki.acute.services.DataOfflineService
 import cat.moki.acute.services.PlayerService
+import cat.moki.acute.services.aidl.ICacheServer
 import cat.moki.acute.ui.theme.AcuteTheme
 import cat.moki.acute.viewModels.DownloadEvent
 import cat.moki.acute.viewModels.DownloadViewModel
@@ -82,6 +87,20 @@ class Home : ComponentActivity() {
     private val library: LibraryViewModel by viewModels()
     private val player: PlayerViewModel by viewModels()
     private var browser: MediaBrowser? = null
+    private lateinit var dataOfflineService: DataOfflineService
+//    private val dataOfflineConnection = object : ServiceConnection {
+//
+//        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+//            // We've bound to LocalService, cast the IBinder and get LocalService instance.
+//            val binder = service as ICacheServer.Stub
+//            dataOfflineService = binder
+//            mBound = true
+//        }
+//
+//        override fun onServiceDisconnected(arg0: ComponentName) {
+//            mBound = false
+//        }
+//    }
 
     val TAG = this::class.java.name
 
@@ -89,6 +108,10 @@ class Home : ComponentActivity() {
     @androidx.annotation.OptIn(UnstableApi::class)
     override fun onStart() {
         super.onStart()
+    }
+
+    private fun initServerCache() {
+
     }
 
     @androidx.annotation.OptIn(UnstableApi::class)

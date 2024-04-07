@@ -90,7 +90,18 @@ data class Album(
                 data.putLong(Const.Duration, duration * 1000L)
                 data.putInt(Const.Count, songCount)
                 data.putString(Const.Server, server)
-                song?.let { data.putParcelableArrayList(Const.Songs, ArrayList<Song>(it)) }
+                if (song == null || song?.size == 0) {
+                    Log.w(TAG, "album mediaitem ${id} ${name}: song list is empty")
+                } else {
+                    Log.d(TAG, "album mediaitem ${id} ${name}: song list ${song?.size}")
+                }
+                val tracker = System.currentTimeMillis()
+                data.putLong("tracker", tracker)
+                Log.d(TAG, "album mediaitem: tracker ${tracker}")
+                song?.let {
+                    data.putParcelableArrayList(Const.Songs, ArrayList<Song>(it))
+                    Log.d(TAG, "album mediaitem ${id} ${name}: songs put")
+                }
                 Log.d(TAG, "song?.toTypedArray() :${id} ")
                 Log.d(TAG, "song?.toTypedArray() :${name} ")
                 Log.d(TAG, "song?.toTypedArray() :${song?.toTypedArray()} ")

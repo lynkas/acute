@@ -17,6 +17,7 @@ val MediaItem.album: Album
 val MediaItem.songs: List<Song>?
     get() = this?.mediaMetadata?.extras?.run {
         classLoader = Song::class.java.classLoader
+        Log.d(TAG, "$this: ")
         Log.d(TAG, ": getParcelableArrayList(Const.Songs) ${getParcelableArrayList<Song>(Const.Songs)}")
         getParcelableArrayList(Const.Songs)
     }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Expand
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Expand
 import androidx.compose.material.icons.outlined.ExpandLess
@@ -36,6 +37,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.neverEqualPolicy
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -54,6 +56,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
+import cat.moki.acute.AcuteApplication
 import cat.moki.acute.components.LibraryViewModelLocal
 import cat.moki.acute.components.utils.AutoCoverPic
 import cat.moki.acute.components.utils.DurationAndCount
@@ -63,6 +66,7 @@ import cat.moki.acute.models.cacheInfo
 import cat.moki.acute.models.duration
 import cat.moki.acute.models.localMediaId
 import cat.moki.acute.models.rawUrl
+import cat.moki.acute.models.song
 import cat.moki.acute.models.songs
 import cat.moki.acute.services.TrackDownloadService
 
@@ -76,13 +80,14 @@ fun AlbumDetailComponent(albumId: MediaId) {
 
     val menuOpenIndex = remember { mutableIntStateOf(-1) }
     val duration = rememberSaveable { mutableLongStateOf(1L) }
-    val albumItem = remember { mutableStateOf(library.cacheDetail.value) }
+    val albumItem = remember { mutableStateOf(library.cacheDetail.value, neverEqualPolicy()) }
     val songList = remember { mutableStateListOf<MediaItem>() }
     val scrollState = rememberScrollState(initial = 0)
 
     LaunchedEffect(albumId) {
-        albumItem.value = library.getAlbumDetail(albumId)
-        Log.d("TAG", "AlbumDetailComponent: ${albumId}")
+        val a = library.getAlbumDetail(albumId)
+        albumItem.value = a
+        Log.d("TAG", "AlbumDetailComponent: ${a?.songs}")
         duration.longValue = library.detail.value?.duration ?: 1
     }
 
@@ -211,6 +216,14 @@ fun AlbumDetailHeadInfo(album: MediaItem, duration: Long, songCount: Int, scroll
                             Log.d(TAG, "AlbumDetailHeadInfo: add ${it.localMediaId} to download")
                         }
                     }) { Icon(Icons.Outlined.Download, "download the album") }
+                    IconButton(onClick = {
+                        Log.d(TAG, "AlbumDetailHeadInfo: ${album.songs}")
+                        album.songs?.map { it.mediaItem }?.forEach {
+                            AcuteApplication.application.downloadManager.removeDownload(it.localMediaId.toString())
+                            Log.d(TAG, "AlbumDetailHeadInfo: delete ${it.localMediaId} from download")
+                        }
+                    }) { Icon(Icons.Outlined.Delete, "delete downloaded") }
+
                 }
 
         }

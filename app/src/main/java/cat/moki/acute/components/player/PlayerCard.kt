@@ -1,5 +1,6 @@
 package cat.moki.acute.components.player
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,9 +55,11 @@ fun PlayerCard(song: Song, operation: @Composable () -> Unit = {}) {
                     .padding(end = 8.dp),
             ) {
                 val trackId = player.currentMediaItem.value?.localMediaId
+                Log.d("TAGaaa", "PlayerCard: ${trackId}")
+                Log.d("TAGaaa", "PlayerCard: ${player.currentMediaItem.value?.albumLocalMediaId}")
                 AutoCoverPic(
-                    trackId = trackId,
-                    albumId = player.currentMediaItem.value?.albumLocalMediaId
+                    trackId = song.localMediaId,
+                    albumId = song.localAlbumMediaId
                 )
 
             }

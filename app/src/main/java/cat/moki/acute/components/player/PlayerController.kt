@@ -33,38 +33,38 @@ data class PlayerControllerData(
     var positionStart: Long = 0,
     var timeStart: Long = 0,
 )
-
-@Composable
-fun PlayerController(player: PlayerViewModel) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = player.currentMediaMetadata.value?.title.toString(),
-                fontSize = 18.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        leadingContent = {
-            AutoCoverPic(
-                trackId = player.currentMediaItem.value?.mediaId?.toMediaId(),
-                albumId = player.currentMediaLocalItem.value?.id?.toMediaId()
-            )
-        },
-        supportingContent = {
-            Text(
-                text = player.currentMediaLocalItem.value?.artist.toString(),
-                fontSize = 14.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        trailingContent = {
-            RoundProgressButton(player = player)
-        }
-    )
-
-}
+//
+//@Composable
+//fun PlayerController(player: PlayerViewModel) {
+//    ListItem(
+//        headlineContent = {
+//            Text(
+//                text = player.currentMediaMetadata.value?.title.toString(),
+//                fontSize = 18.sp,
+//                maxLines = 1,
+//                overflow = TextOverflow.Ellipsis,
+//            )
+//        },
+//        leadingContent = {
+//            AutoCoverPic(
+//                trackId = player.currentMediaItem.value?.mediaId?.toMediaId(),
+//                albumId = player.currentMediaLocalItem.value?.id?.toMediaId()
+//            )
+//        },
+//        supportingContent = {
+//            Text(
+//                text = player.currentMediaLocalItem.value?.artist.toString(),
+//                fontSize = 14.sp,
+//                maxLines = 1,
+//                overflow = TextOverflow.Ellipsis,
+//            )
+//        },
+//        trailingContent = {
+//            RoundProgressButton(player = player)
+//        }
+//    )
+//
+//}
 
 @Composable
 fun RoundProgressButton(

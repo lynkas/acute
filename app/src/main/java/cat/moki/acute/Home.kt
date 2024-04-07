@@ -2,6 +2,7 @@ package cat.moki.acute
 
 import android.Manifest
 import android.content.ComponentName
+import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -18,28 +19,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Badge
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -69,25 +64,68 @@ import cat.moki.acute.components.setting.AudioFilesList
 import cat.moki.acute.components.setting.Setting
 import cat.moki.acute.components.topbar.DownloadButton
 import cat.moki.acute.components.topbar.SearchButton
-import cat.moki.acute.models.ServerCacheStatus
-import cat.moki.acute.viewModels.LibraryViewModel
-import cat.moki.acute.viewModels.PlayerViewModel
 import cat.moki.acute.models.toMediaId
 import cat.moki.acute.routes.Strings
 import cat.moki.acute.services.DataOfflineService
 import cat.moki.acute.services.PlayerService
-import cat.moki.acute.services.aidl.ICacheServer
 import cat.moki.acute.ui.theme.AcuteTheme
-import cat.moki.acute.viewModels.DownloadEvent
 import cat.moki.acute.viewModels.DownloadViewModel
-import kotlinx.coroutines.launch
+import cat.moki.acute.viewModels.LibraryViewModel
+import cat.moki.acute.viewModels.PlayerViewModel
+
 
 class Home : ComponentActivity() {
     private val download: DownloadViewModel by viewModels()
     private val library: LibraryViewModel by viewModels()
     private val player: PlayerViewModel by viewModels()
     private var browser: MediaBrowser? = null
-    private lateinit var dataOfflineService: DataOfflineService
+    private var dataOfflineService: DataOfflineService? = null
+    private var dataOfflineBinder: DataOfflineService.DataOfflineBinder? = null
+    private val dataOfflineServiceConnection: ServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            dataOfflineService = (service as DataOfflineService.DataOfflineBinder).getService()
+            dataOfflineBinder = service
+            library.dataOfflineBinder = dataOfflineBinder
+            Log.d(TAG, "onServiceConnected: dataOfflineServiceConnection connected ${service}")
+        }
+
+        override fun onServiceDisconnected(className: ComponentName) {
+            dataOfflineService = null
+        }
+    }
+    private var shouldUnbindDataOfflineService = false
+
+    fun bindDataOfflineService(): DataOfflineService.DataOfflineBinder? {
+        // Attempts to establish a connection with the service.  We use an
+        // explicit class name because we want a specific service
+        // implementation that we know will be running in our own process
+        // (and thus won't be supporting component replacement by other
+        // applications).
+        if (shouldUnbindDataOfflineService) return dataOfflineBinder
+        if (bindService(
+                Intent(this, DataOfflineService::class.java), dataOfflineServiceConnection, BIND_AUTO_CREATE
+            )
+        ) {
+            shouldUnbindDataOfflineService = true
+        } else {
+            Log.e(
+                "MY_APP_TAG", "Error: The requested service doesn't " +
+                        "exist, or this client isn't allowed access to it."
+            )
+        }
+
+        return dataOfflineBinder
+    }
+
+    fun unbindDataOfflineService() {
+        if (shouldUnbindDataOfflineService) {
+            // Release information about the service's state.
+            unbindService(dataOfflineServiceConnection)
+            shouldUnbindDataOfflineService = false
+        }
+    }
+
+
 //    private val dataOfflineConnection = object : ServiceConnection {
 //
 //        override fun onServiceConnected(className: ComponentName, service: IBinder) {
@@ -108,11 +146,9 @@ class Home : ComponentActivity() {
     @androidx.annotation.OptIn(UnstableApi::class)
     override fun onStart() {
         super.onStart()
+        dataOfflineBinder = bindDataOfflineService()
     }
 
-    private fun initServerCache() {
-
-    }
 
     @androidx.annotation.OptIn(UnstableApi::class)
     private fun initializeBrowser() {
@@ -282,6 +318,7 @@ class Home : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        unbindDataOfflineService()
 
     }
 }

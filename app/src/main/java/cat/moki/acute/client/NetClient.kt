@@ -120,7 +120,7 @@ class NetLink(val builder: HttpUrl.Builder, val serverId: String) {
         return builder.apply {
             addPathSegment("stream")
             addQueryParameter("id", id)
-            addQueryParameter("maxBitRate", "192")
+//            addQueryParameter("maxBitRate", "192")
             fragment(cacheInfo.pathWithoutDownload)
         }.build().toString()
     }

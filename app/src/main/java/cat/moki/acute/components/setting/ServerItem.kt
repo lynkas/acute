@@ -1,5 +1,6 @@
 package cat.moki.acute.components.setting
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import cat.moki.acute.AcuteApplication
 import cat.moki.acute.client.NetClient
+import cat.moki.acute.components.LibraryViewModelLocal
 import cat.moki.acute.components.login.Login
 import cat.moki.acute.models.Credential
 import cat.moki.acute.models.RawCredential
@@ -45,6 +47,7 @@ internal enum class RescanStatus { Scanning, Done, Error, Init }
 @Composable
 fun ServerItem(credential: Credential) {
     val scope = rememberCoroutineScope()
+    val library = LibraryViewModelLocal.current
     var testStatus by rememberSaveable { mutableStateOf(ServerStatus.NotTested) }
     var menuExpand by rememberSaveable { mutableStateOf(false) }
     var scanStatus by rememberSaveable { mutableStateOf(RescanStatus.Init) }
@@ -142,8 +145,17 @@ fun ServerItem(credential: Credential) {
                         headlineContent = { Text("Edit") }
                     )
                     ListItem(
+                        modifier = Modifier.clickable {
+                            library.dataOfflineBinder?.cacheOperation("start", credential.id) ?: run {
+                                Log.w(
+                                    TAG,
+                                    "ServerItem: no dataOfflineBinder",
+                                )
+                            }
+                        },
                         leadingContent = { Icon(Icons.Outlined.CloudSync, contentDescription = "") },
                         headlineContent = { Text("Sync all data to local") }
+
                     )
 
                     fun changeInternetStatus(status: Boolean) {

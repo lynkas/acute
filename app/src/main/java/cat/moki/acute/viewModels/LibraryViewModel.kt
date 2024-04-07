@@ -1,5 +1,6 @@
 package cat.moki.acute.viewModels
 
+import android.provider.ContactsContract.Data
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
@@ -16,6 +17,7 @@ import cat.moki.acute.AcuteApplication
 import cat.moki.acute.components.library.ViewBy
 import cat.moki.acute.models.MediaId
 import cat.moki.acute.models.playlist
+import cat.moki.acute.services.DataOfflineService
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.guava.await
@@ -33,12 +35,14 @@ class LibraryViewModel : ViewModel() {
     val detailedList = mutableStateListOf<MediaItem>()
     val detail = mutableStateOf<MediaItem?>(null)
     val cacheDetail = mutableStateOf<MediaItem?>(null)
+    var dataOfflineBinder: DataOfflineService.DataOfflineBinder? = null
 
 //    val serverIdPlaylists = mutableStateMapOf<String, List<MediaItem>?>()
 //    val serverIdPlaylistSongs = mutableStateMapOf<String, Map<String, List<MediaItem>>?>()
 
     val inited = mutableStateOf(false)
     lateinit var browser: MutableState<MediaBrowser>
+
 
     @Volatile
     private var loadingLock = false

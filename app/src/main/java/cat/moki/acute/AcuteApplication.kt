@@ -4,23 +4,15 @@ import android.accounts.Account
 import android.accounts.AccountManager
 import android.annotation.SuppressLint
 import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.LinkProperties
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
@@ -28,8 +20,8 @@ import androidx.media3.datasource.cache.ContentMetadata
 import androidx.media3.exoplayer.offline.DefaultDownloadIndex
 import androidx.media3.exoplayer.offline.DefaultDownloaderFactory
 import androidx.media3.exoplayer.offline.DownloadManager
+import androidx.media3.exoplayer.scheduler.Requirements
 import cat.moki.acute.client.LocalClient
-import cat.moki.acute.components.LocalCacheData
 import cat.moki.acute.models.CacheTrackFile
 import cat.moki.acute.models.Credential
 import cat.moki.acute.models.MediaId
@@ -39,16 +31,15 @@ import cat.moki.acute.services.registerInternetChange
 import cat.moki.acute.utils.Setting
 import cat.moki.acute.utils.Storage
 import cat.moki.acute.utils.gson
-import com.danikula.videocache.HttpProxyCacheServer
+import com.facebook.cache.disk.DiskCacheConfig
+import com.facebook.drawee.backends.pipeline.Fresco
+import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
 import com.google.gson.JsonSyntaxException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.OkHttpClient
 import java.io.File
-import java.lang.IllegalArgumentException
+import java.io.IOException
 import java.security.MessageDigest
 import java.util.concurrent.Executors
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.io.path.createDirectories
 
 
@@ -115,11 +106,13 @@ class AcuteApplication : Application() {
     }
 
     val downloadManager: DownloadManager by lazy {
-        DownloadManager(
+        val manager = DownloadManager(
             this,
             DefaultDownloadIndex(LocalSimpleCache.database),
             DefaultDownloaderFactory(cacheDataSource(this), Executors.newFixedThreadPool(/* nThreads= */ 6))
         )
+        if (!useInternet) manager.requirements = Requirements(Requirements.NETWORK_UNMETERED)
+        manager
     }
 
     val context: Context
@@ -136,6 +129,39 @@ class AcuteApplication : Application() {
         internet()
         initServers()
         updateDefaultServer()
+        initImageLoad()
+    }
+
+
+    fun initImageLoad() {
+
+        val pipelineConfig =
+            OkHttpImagePipelineConfigFactory
+                .newBuilder(
+                    this, OkHttpClient.Builder()
+                        .apply {
+                            addNetworkInterceptor {
+                                val serverId = uriToTrackCache(it.request().url.toString().toUri())?.serverId
+                                Log.d(TAG, "initImageLoad: serverId ${serverId}")
+                                Log.d(
+                                    TAG,
+                                    "initImageLoad: !serverMetadataUseInternet(serverId) ${serverId != null && !serverMetadataUseInternet(serverId)}"
+                                )
+                                if (serverId != null && !serverMetadataUseInternet(serverId)) throw IOException("not allowed to use internet")
+                                it.proceed(it.request())
+                            }
+                        }
+                        .build()
+                )
+                .setDiskCacheEnabled(true)
+                .setMainDiskCacheConfig(DiskCacheConfig.newBuilder(this).apply {
+                    this.setMaxCacheSize(Long.MAX_VALUE)
+                    this.setMaxCacheSizeOnLowDiskSpace(Long.MAX_VALUE)
+                    this.setMaxCacheSizeOnVeryLowDiskSpace(Long.MAX_VALUE)
+                }.build())
+                .build()
+
+        Fresco.initialize(this, pipelineConfig)
     }
 
 
@@ -224,6 +250,10 @@ class AcuteApplication : Application() {
 
     fun coverPath(mediaId: MediaId): File {
         return File(trackCoverDir, mediaId.base64)
+    }
+
+    fun coverPathUri(mediaId: MediaId): Uri {
+        return Uri.fromFile(coverPath(mediaId))
     }
 
     fun hasTrackCover(mediaId: MediaId?): Boolean {

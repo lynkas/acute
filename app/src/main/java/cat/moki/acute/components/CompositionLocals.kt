@@ -2,6 +2,7 @@ package cat.moki.acute.components
 
 import androidx.compose.runtime.compositionLocalOf
 import androidx.navigation.NavHostController
+import cat.moki.acute.services.DataOfflineService
 import cat.moki.acute.viewModels.DownloadViewModel
 import cat.moki.acute.viewModels.LibraryViewModel
 import cat.moki.acute.viewModels.PlayerViewModel

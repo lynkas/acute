@@ -1,6 +1,7 @@
 package cat.moki.acute.client
 
 import android.content.Context
+import android.util.Log
 import cat.moki.acute.data.AppDatabase
 import cat.moki.acute.models.Album
 import cat.moki.acute.models.Playlist
@@ -24,6 +25,7 @@ class LocalClient(val context: Context, val serverId: String) : IQuery {
 
     override suspend fun getAlbumDetail(id: String): Album {
         val songs = AppDatabase.getInstance(context).song().getAlbum(id, serverId = serverId)
+        Log.d("TAG", "getAlbumDetail: ${songs.size}")
         val album = AppDatabase.getInstance(context).album().get(id, serverId = serverId)
         album.song = songs
         return album

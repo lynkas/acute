@@ -140,7 +140,7 @@ fun AlbumListItem(album: MediaItem) {
 
             },
         leadingContent = {
-            ChangeableCoverPic(modifier = Modifier.clip(shape = RoundedCornerShape(8.dp)), albumPic = album.mediaMetadata.artworkUri)
+            ChangeableCoverPic(modifier = Modifier.clip(shape = RoundedCornerShape(8.dp)), albumPic = album.mediaMetadata.artworkUri.toString())
         },
         headlineContent = {
             TitleBracketScale(
@@ -215,7 +215,7 @@ fun AlbumPreviewGrid(onNavToAlbum: (MediaItem) -> Unit) {
 @Composable
 fun AlbumGridItem(album: MediaItem, onNavToAlbum: (MediaItem) -> Unit) {
     Column(modifier = Modifier.clickable { onNavToAlbum(album) }) {
-        ChangeableCoverPic(modifier = Modifier.clip(shape = RoundedCornerShape(8.dp)), albumPic = album.mediaMetadata.artworkUri)
+        ChangeableCoverPic(modifier = Modifier.clip(shape = RoundedCornerShape(8.dp)), albumPic = album.mediaMetadata.artworkUri.toString())
         Text(
             text = album.mediaMetadata.albumTitle.toString(),
             fontSize = 20.sp,

@@ -11,38 +11,35 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.TransferListener
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import cat.moki.acute.AcuteApplication
+import okhttp3.Call
+import okhttp3.OkHttpClient
 import java.io.IOException
 
 @OptIn(UnstableApi::class)
 fun cacheDataSource(context: Context): CacheDataSource.Factory {
     val TAG = "cacheDataSource"
+    val client = OkHttpClient.Builder().addNetworkInterceptor {
+        Log.d(TAG, "cacheDataSource: it.request().url ${it.request().url}")
+        val response = if (AcuteApplication.useOnlineSource) {
+            it.proceed(it.request())
+        } else {
+            throw IOException("not allowed to use internet ")
+        }
+        if (response.body?.contentType()?.type != "audio") {
+            Log.w(TAG, "cacheDataSource: ${it.request().url} is not an audio")
+            Log.w(TAG, "cacheDataSource: content size ${response.body?.contentLength()}")
+            Log.w(TAG, "cacheDataSource: content ${response.body?.byteString()}")
+            throw IOException("not a valid audio file")
+        }
+        response
+    }.build()
     return CacheDataSource.Factory().apply {
         Log.d(TAG, "onCreate: ${LocalSimpleCache.cache}")
         setCache(LocalSimpleCache.cache)
-        setUpstreamDataSourceFactory(DefaultDataSource.Factory(context).apply {
-            setTransferListener(object : TransferListener {
-                override fun onTransferInitializing(source: DataSource, dataSpec: DataSpec, isNetwork: Boolean) {
-                    if (!AcuteApplication.application.useOnlineSource) {
-                        throw RuntimeException("should not use network")
-                    }
-                }
-
-                override fun onTransferStart(source: DataSource, dataSpec: DataSpec, isNetwork: Boolean) {
-                }
-
-                override fun onBytesTransferred(
-                    source: DataSource,
-                    dataSpec: DataSpec,
-                    isNetwork: Boolean,
-                    bytesTransferred: Int
-                ) {
-                }
-
-                override fun onTransferEnd(source: DataSource, dataSpec: DataSpec, isNetwork: Boolean) {
-                }
-
-            })
+        setUpstreamDataSourceFactory(OkHttpDataSource.Factory {
+            client.newCall(it)
         })
         setCacheKeyFactory { dataSpec ->
             if (dataSpec.uri.toString().isEmpty()) {
@@ -51,6 +48,7 @@ fun cacheDataSource(context: Context): CacheDataSource.Factory {
             Log.d(TAG, "cacheDataSource: ${dataSpec.uri}")
             AcuteApplication.application.uriToTrackCache(dataSpec.uri)?.pathWithoutDownload!!
         }
+
 
     }
 }

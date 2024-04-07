@@ -6,12 +6,15 @@ import android.os.Parcelable
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MediaMetadata.MEDIA_TYPE_ALBUM
+import androidx.media3.common.MediaMetadata.MEDIA_TYPE_MUSIC
+import androidx.media3.common.MediaMetadata.PICTURE_TYPE_FRONT_COVER
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import cat.moki.acute.AcuteApplication
 import cat.moki.acute.Const
 import cat.moki.acute.Const.Companion.AlbumLocalMediaId
 import cat.moki.acute.Const.Companion.CacheInfo
@@ -116,6 +119,8 @@ data class Song(
     }
 
     private fun setCover(builder: MediaMetadata.Builder) {
+//        Glide.with(AcuteApplication.application.context).load
+//        builder.maybeSetArtworkData(, PICTURE_TYPE_FRONT_COVER)
         coverArt?.let { builder.setArtworkUri(Uri.parse(NetClient.link(server).getCoverArtUrl(it))) }
     }
 
@@ -171,6 +176,11 @@ data class Song(
     @Deprecated("use mediaItem", ReplaceWith("mediaItem"))
     val mediaItemWithoutUri
         get() = buildMediaItem()
+
+    val localAlbumMediaId: MediaId
+        get() = MediaId(server, MEDIA_TYPE_ALBUM, parent ?: "")
+    val localMediaId: MediaId
+        get() = MediaId(server, MEDIA_TYPE_MUSIC, id)
 }
 
 @Dao

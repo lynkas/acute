@@ -9,7 +9,8 @@ class ServiceAwakeListener(val wakeLockRequire: () -> Unit, val wakeLockRelease:
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         super.onIsPlayingChanged(isPlaying)
         Log.d(TAG, "onIsPlayingChanged: $isPlaying")
-        if (isPlaying) wakeLockRequire()
-        else wakeLockRelease()
+        wakeLockRequire()
+//        if (isPlaying) wakeLockRequire()
+//        else wakeLockRelease()
     }
 }

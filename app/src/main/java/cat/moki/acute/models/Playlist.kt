@@ -31,7 +31,7 @@ data class Playlist(
     val songCount: Int,
     val created: Date,
     val duration: Int,
-    @Ignore val entry: List<Song>
+    @Ignore val entry: List<Song>?
 ) : Parcelable {
     constructor(
         id: String,

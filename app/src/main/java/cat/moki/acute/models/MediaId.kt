@@ -1,7 +1,10 @@
 package cat.moki.acute.models
 
 import android.util.Log
+import androidx.media3.common.MediaMetadata.MEDIA_TYPE_ALBUM
+import androidx.media3.common.MediaMetadata.MEDIA_TYPE_FOLDER_ALBUMS
 import androidx.media3.common.MediaMetadata.MediaType
+import cat.moki.acute.AcuteApplication
 import cat.moki.acute.utils.gson
 import com.google.gson.Gson
 import kotlin.io.encoding.Base64
@@ -14,7 +17,8 @@ class MediaId(
 ) {
 
     companion object {
-        public val Root = "root"
+        public val RootString = "root"
+        public val RootMediaId = MediaId(AcuteApplication.application.defaultServerId ?: RootString, MEDIA_TYPE_ALBUM, RootString)
         fun from(wholeId: String): MediaId {
             Log.d("MediaId", "from: ${wholeId}")
             return gson.fromJson(wholeId, MediaId::class.java)
@@ -26,7 +30,7 @@ class MediaId(
     }
 
     val isRoot
-        get() = itemId == Root || itemId.isEmpty()
+        get() = itemId == RootString || itemId.isEmpty()
 
     @OptIn(ExperimentalEncodingApi::class)
     val base64: String

@@ -20,6 +20,7 @@ import cat.moki.acute.Command
 import cat.moki.acute.Const
 import cat.moki.acute.client.Client
 import cat.moki.acute.client.LocalClient
+import cat.moki.acute.models.MediaId
 import cat.moki.acute.models.Playlist
 import cat.moki.acute.models.SearchResult3
 import cat.moki.acute.models.duration
@@ -100,7 +101,7 @@ class MediaLibrarySessionCallback(val context: Context, val updatePlaylistIntern
         return Futures.immediateFuture(
             LibraryResult.ofItem(
                 MediaItem.Builder()
-                    .setMediaId(Const.Root)
+                    .setMediaId(MediaId.RootMediaId.toString())
                     .setMediaMetadata(MediaMetadata.Builder().setIsBrowsable(true).setIsPlayable(false).build())
                     .build(), params
             )
@@ -176,7 +177,7 @@ class MediaLibrarySessionCallback(val context: Context, val updatePlaylistIntern
                     Client.store(context, mediaId.serverId).getPlaylists().map { it.mediaItem }
                 } else {
                     Client.store(context, mediaId.serverId, type = Client.Type.Local)
-                        .getPlaylist(id = mediaId.itemId).entry.map { it.mediaItemWithoutUri }
+                        .getPlaylist(id = mediaId.itemId).entry?.map { it.mediaItemWithoutUri } ?: emptyList()
                 }
 
                 MediaMetadata.MEDIA_TYPE_ALBUM -> {

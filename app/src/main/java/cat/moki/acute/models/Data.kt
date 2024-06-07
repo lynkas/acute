@@ -60,12 +60,12 @@ data class SubsonicResponse(
 
         playlist?.let {
             it.server = serverId
-            it.entry.forEach { it.server = serverId }
+            it.entry?.forEach { it.server = serverId }
         }
 
         playlists?.playlist?.forEach {
             it.server = serverId
-            it.entry.forEach { it.server = serverId }
+            it.entry?.forEach { it.server = serverId }
         }
 
         searchResult2?.let {

@@ -109,7 +109,7 @@ class LibraryViewModel : ViewModel() {
 
 
     suspend fun getPlaylists(serverId: String, force: Boolean = false): Map<MediaItem, List<MediaItem>> {
-        val mediaId = MediaId(serverId, MediaMetadata.MEDIA_TYPE_PLAYLIST, MediaId.Root)
+        val mediaId = MediaId(serverId, MediaMetadata.MEDIA_TYPE_PLAYLIST, MediaId.RootString)
         Log.d(TAG, "getPlaylistDetail: start")
         val playlistData = browser.value.getChildren(mediaId.toString(), 0, Int.MAX_VALUE, null).await()
         if (playlistData.resultCode != LibraryResult.RESULT_SUCCESS) {
@@ -119,8 +119,8 @@ class LibraryViewModel : ViewModel() {
         }
         val map = mutableMapOf<MediaItem, List<MediaItem>>()
         playlistData.value?.let {
-            map.putAll(it.associate { it ->
-                Pair(it, it.playlist.entry.map { it.mediaItemWithoutUri })
+            map.putAll(it.filter { it.playlist.entry != null }.associate { it ->
+                Pair(it, it.playlist.entry!!.map { it.mediaItemWithoutUri })
             })
         }
 //        serverIdPlaylistSongs[serverId] = map
@@ -164,7 +164,7 @@ class LibraryViewModel : ViewModel() {
         val page = albumList.size / size.intValue
         val remain = albumList.size % size.intValue
         Log.d(TAG, "getNextAlbums: page ${page} remain ${remain}")
-        val mediaId = MediaId(serverId.value, MediaMetadata.MEDIA_TYPE_ALBUM, MediaId.Root)
+        val mediaId = MediaId(serverId.value, MediaMetadata.MEDIA_TYPE_ALBUM, MediaId.RootString)
 
         val result = browser.value.getChildren(mediaId.toString(), page, size.intValue, null).await()
         if (result.resultCode != LibraryResult.RESULT_SUCCESS) {

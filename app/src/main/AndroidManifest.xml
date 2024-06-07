@@ -33,6 +33,10 @@
         <!--        <meta-data-->
         <!--            android:name="cat.moki.acute.utils.MyGlideAppModule"-->
         <!--            android:value="AppGlideModule" />-->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
 
         <service
             android:name=".services.TrackDownloadService"

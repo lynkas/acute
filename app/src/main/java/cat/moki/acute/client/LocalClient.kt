@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import cat.moki.acute.data.AppDatabase
 import cat.moki.acute.models.Album
+import cat.moki.acute.models.MediaId
 import cat.moki.acute.models.Playlist
 import cat.moki.acute.models.SearchResult2
 import cat.moki.acute.models.SearchResult3
@@ -20,7 +21,10 @@ class LocalClient(val context: Context, val serverId: String) : IQuery {
         genre: String?,
         musicFolderId: String?
     ): List<Album> {
-        return AppDatabase.getInstance(context).album().getAll(limit = size, offset = offset, serverId = serverId)
+        if (serverId == MediaId.RootString) {
+            return AppDatabase.getInstance(context).album().getAll(limit = size, offset = offset)
+        }
+        return AppDatabase.getInstance(context).album().getAllWithServer(limit = size, offset = offset, serverId = serverId)
     }
 
     override suspend fun getAlbumDetail(id: String): Album {

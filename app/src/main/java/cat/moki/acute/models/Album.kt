@@ -133,7 +133,10 @@ interface AlbumDao {
     fun get(id: String, serverId: String): Album
 
     @Query("SELECT * FROM album where server=:serverId order by created desc limit :limit offset :offset")
-    fun getAll(limit: Int, offset: Int, serverId: String): List<Album>
+    fun getAllWithServer(limit: Int, offset: Int, serverId: String): List<Album>
+
+    @Query("SELECT * FROM album order by created desc limit :limit offset :offset")
+    fun getAll(limit: Int, offset: Int): List<Album>
 
 }
 

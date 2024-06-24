@@ -89,7 +89,11 @@ class OnlineClient(private val context: Context, private val serverId: String) :
 
     override suspend fun getPlaylist(id: String): Playlist {
         return requestFramework(
-            request = { it.getPlaylist(id) },
+            request = {
+                val result = it.getPlaylist(id)
+                Log.d(TAG, "getPlaylist: ${result}")
+                return@requestFramework result
+            },
             unpack = { it.subsonicResponse.playlist },
             cache = { db, it ->
                 db.playlist().insertAll(it)

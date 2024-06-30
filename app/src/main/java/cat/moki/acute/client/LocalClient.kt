@@ -60,6 +60,10 @@ class LocalClient(val context: Context, val serverId: String) : IQuery {
         TODO("Not yet implemented")
     }
 
+    fun getSongs(): List<Song> {
+        return AppDatabase.getInstance(context).song().getAllFromServer(serverId)
+    }
+
     override suspend fun search3(
         query: String,
         artistCount: Int,

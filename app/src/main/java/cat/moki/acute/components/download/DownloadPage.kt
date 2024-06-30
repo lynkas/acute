@@ -3,11 +3,13 @@ package cat.moki.acute.components.download
 import android.text.format.Formatter
 import android.util.Log
 import androidx.annotation.OptIn
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -71,29 +73,54 @@ fun DownloadPage() {
         return songs[id]
 
     }
+    LaunchedEffect(key1 = true) {
+        scope.launch {
+            downloadViewModel.flow.collect {
+                when (it) {
+                    is DownloadEvent.Downloads -> downloadList = it.list
+                    is DownloadEvent.Paused -> downloadPaused = it.paused
+                    is DownloadEvent.DownloadUpdate -> downloadList = downloadList.map { d ->
+                        if (d.request.id == it.download.request.id) it.download else d
+                    }
 
-    scope.launch {
-        downloadViewModel.flow.collect {
-            when (it) {
-                is DownloadEvent.Downloads -> downloadList = it.list
-                is DownloadEvent.Paused -> downloadPaused = it.paused
-                is DownloadEvent.DownloadUpdate -> downloadList = downloadList.map { d ->
-                    if (d.request.id == it.download.request.id) it.download else d
+                    is DownloadEvent.DownloadRemoved -> downloadList = downloadList.filter { d ->
+                        d.request.id != it.download.request.id
+                    }
+
+                    is DownloadEvent.DownloadHistory -> downloadHistoryList = it.list
+
+
                 }
-
-                is DownloadEvent.DownloadRemoved -> downloadList = downloadList.filter { d ->
-                    d.request.id != it.download.request.id
-                }
-
-                is DownloadEvent.DownloadHistory -> downloadHistoryList = it.list
-
-
             }
         }
     }
 
 
+
     LazyColumn {
+        if (downloadList.isNotEmpty())
+            item {
+                ListItem(headlineContent = { Text(text = "Cancel All") }, modifier = Modifier.clickable {
+                    manager.removeAllDownloads()
+                })
+            }
+        if (downloadPaused)
+            item {
+                ListItem(headlineContent = { Text(text = "Resume") }, modifier = Modifier.clickable {
+                    manager.resumeDownloads()
+                })
+            }
+        if (!downloadPaused && downloadList.isNotEmpty()) {
+            item {
+                ListItem(headlineContent = { Text(text = "Pause All") }, modifier = Modifier.clickable {
+                    manager.pauseDownloads()
+                })
+            }
+        }
+
+        item {
+            Divider()
+        }
         itemsIndexed(downloadList, key = { i, download -> download.request.id }) { index, item ->
             var progress by rememberSaveable { mutableFloatStateOf(0f) }
             LaunchedEffect(item) {

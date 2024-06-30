@@ -4,6 +4,7 @@ import cat.moki.acute.models.Album
 import cat.moki.acute.models.Playlist
 import cat.moki.acute.models.SearchResult2
 import cat.moki.acute.models.SearchResult3
+import cat.moki.acute.models.Song
 
 interface IQuery {
     suspend fun getAlbumList(

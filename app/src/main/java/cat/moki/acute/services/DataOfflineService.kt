@@ -89,7 +89,7 @@ class DataOfflineService : Service(), CoroutineScope {
     }
 
     fun buildNotification(serverCacheStatus: ServerCacheStatus): Notification {
-        return NotificationCompat.Builder(this, "NOTIFICATION_CHANNEL_ID").apply {
+        return NotificationCompat.Builder(this, "ServerMetaSync").apply {
             setContentTitle("Caching Meta Information")
             setContentText("${serverCacheStatus.finishedTask} / ${serverCacheStatus.totalTasks}")
             setSmallIcon(R.drawable.ic_baseline_downloading_24)

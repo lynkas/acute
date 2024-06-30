@@ -122,7 +122,7 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
                 playlistCacheAdaptor()
             }
         })
-
+        setListener(MediaSessionServiceListener())
 
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
@@ -163,6 +163,10 @@ class PlayerService : MediaLibraryService(), CoroutineScope {
             player.replaceMediaItem(i, mediaItemUriSetting(player.getMediaItemAt(i)))
 
         }
+    }
+
+    private inner class MediaSessionServiceListener : Listener {
+
     }
 
     override fun onDestroy() {

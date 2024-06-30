@@ -1,6 +1,7 @@
 package cat.moki.acute.components.setting
 
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,13 +29,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.core.net.toUri
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.offline.DownloadRequest
+import androidx.media3.exoplayer.offline.DownloadService
 import cat.moki.acute.AcuteApplication
+import cat.moki.acute.client.Client
+import cat.moki.acute.client.LocalClient
 import cat.moki.acute.client.NetClient
 import cat.moki.acute.components.LibraryViewModelLocal
 import cat.moki.acute.components.login.Login
 import cat.moki.acute.models.Credential
 import cat.moki.acute.models.RawCredential
 import cat.moki.acute.models.ServerConfiguration
+import cat.moki.acute.models.localMediaId
+import cat.moki.acute.models.serverId
+import cat.moki.acute.services.TrackDownloadService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -44,6 +54,7 @@ internal enum class ServerStatus {
 
 internal enum class RescanStatus { Scanning, Done, Error, Init }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun ServerItem(credential: Credential) {
     val scope = rememberCoroutineScope()
@@ -157,7 +168,23 @@ fun ServerItem(credential: Credential) {
                         headlineContent = { Text("Sync all data to local") }
 
                     )
+                    ListItem(
+                        modifier = Modifier.clickable {
+                            LocalClient(AcuteApplication.application.context, credential.id).getSongs().forEach {
+                                DownloadService.sendAddDownload(
+                                    AcuteApplication.application.context, TrackDownloadService::class.java,
+                                    DownloadRequest.Builder(
+                                        it.localMediaId.toString(),
+                                        NetClient.link(it.server).getRawStreamUrl(it.id).toUri(),
+                                    ).build(),
+                                    false
+                                )
+                            }
+                        },
+                        leadingContent = { Icon(Icons.Outlined.CloudSync, contentDescription = "") },
+                        headlineContent = { Text("Cache all info cached music to local") }
 
+                    )
                     fun changeInternetStatus(status: Boolean) {
                         serverConfig = serverConfig.copy(onlyUseLocalMetaData = status)
                         AcuteApplication.application.storage.updateServerConfiguration(credential.id, serverConfig)
@@ -172,6 +199,7 @@ fun ServerItem(credential: Credential) {
                             Switch(checked = serverConfig.onlyUseLocalMetaData, onCheckedChange = { changeInternetStatus(it) })
                         }
                     )
+
                     Divider()
                     ListItem(
                         leadingContent = { Icon(Icons.Outlined.DeleteOutline, contentDescription = "") },

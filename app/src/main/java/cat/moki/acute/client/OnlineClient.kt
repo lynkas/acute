@@ -9,6 +9,7 @@ import cat.moki.acute.models.Playlist
 import cat.moki.acute.models.Res
 import cat.moki.acute.models.SearchResult2
 import cat.moki.acute.models.SearchResult3
+import cat.moki.acute.models.Song
 import retrofit2.Response
 import retrofit2.http.Query
 
@@ -86,7 +87,7 @@ class OnlineClient(private val context: Context, private val serverId: String) :
             }
         )
     }
-
+    
     override suspend fun getPlaylist(id: String): Playlist {
         return requestFramework(
             request = {
